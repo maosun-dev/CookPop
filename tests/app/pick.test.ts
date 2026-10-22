@@ -19,7 +19,7 @@ function setup() {
 describe('きめる画面', () => {
   it('挨拶が出て、きめて！で料理が決まり結果カードが出る（動きなし）', () => {
     const { scr, mascot } = setup();
-    expect(mascot.el.querySelector('.bubble')!.textContent).toContain('晩ごはん');
+    expect(mascot.el.querySelector('.bubble')!.textContent).toContain('はじめまして'); // 初回は挨拶より はじめまして が先
     (scr.el.querySelector('#roll') as HTMLButtonElement).click();
     const dish = scr.el.querySelector('.dish')!;
     expect(dish.textContent).toBe('よだれ水餃子');
@@ -178,5 +178,24 @@ describe('きめる画面', () => {
     ([...scr.el.querySelectorAll('.choice')].find(c => c.textContent === '新しい名前') as HTMLElement).click();
     expect(scr.el.querySelector('.dish')!.textContent).toBe('新しい名前');
     expect(scr.el.querySelector('.result .card-title')!.textContent).toBe('新しい名前');
+  });
+  it('初めてなら はじめまして の案内と 献立帳へ のボタン', () => {
+    const { mascot, state } = setup();
+    expect(mascot.el.querySelector('.bubble')!.textContent).toContain('はじめまして');
+    state.addRecipe({ url: 'https://youtu.be/ZZZZZZZZZZZ', name: 'x', cat: '主菜' });
+    expect(mascot.el.querySelector('.bubble')!.textContent).not.toContain('はじめまして');
+  });
+  it('深夜はポンが眠い', () => {
+    // setup の now を 23 時にした版
+    Object.defineProperty(window, 'matchMedia', { writable: true, value: () => ({ matches: true, addEventListener() {}, removeEventListener() {} }) });
+    const state = createState(fake(), () => new Date(2026, 9, 23, 23), () => 'x');
+    const mascot = createMascot();
+    createPickScreen(state, { rng: () => 0, mascot, openPlayer: () => {}, now: () => new Date(2026, 9, 23, 23) });
+    expect(mascot.el.dataset.mood).toBe('sleepy');
+  });
+  it('料理名の枠は止まったときだけ読み上げる', () => {
+    const { scr } = setup();
+    const dish = scr.el.querySelector('.dish')!;
+    expect(dish.getAttribute('aria-live')).toBe('polite');
   });
 });

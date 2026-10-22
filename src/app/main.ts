@@ -30,6 +30,7 @@ const pick = createPickScreen(state, {
   mascot,
   now: () => new Date(),
   openPlayer: (host, videoId) => openPlayer(host, videoId),
+  openBook: () => tabs.select('book'),
 });
 
 const book = createBookScreen(state, {

@@ -3,6 +3,7 @@ import { el, clear } from '../ui';
 import { toast } from '../toast';
 import type { AppState } from '../state';
 import { createForm } from './form';
+import { thumbImg } from '../thumb';
 import type { FetchJson } from '../../core/oembed';
 import { countOf, lastMade } from '../../core/log';
 import { CATS, type Cat, type Recipe } from '../../core/recipe';
@@ -83,7 +84,7 @@ export function createBookScreen(
     const open = el(
       'button',
       { class: 'tile-open', type: 'button', onclick: () => showRecipe(r.id) },
-      el('img', { src: r.thumb, alt: '', loading: 'lazy' }),
+      thumbImg(r.thumb, ''),
       el('span', { class: 'tile-body' }, el('span', { class: 'tile-name' }, r.name), el('span', { class: 'tag' }, r.cat)),
     );
     // 星はカードを開くボタンとは別の兄弟にする（押してもカードは開かない）
@@ -131,7 +132,7 @@ export function createBookScreen(
 
   // ===== 詳細 =====
   function buildDetail(id: string): DetailView {
-    const img = el('img', { src: '', alt: '', loading: 'lazy' });
+    const thumbHost = el('div', { class: 'thumb-host' });
     const title = el('h2', { class: 'card-title' });
     const meta = el('p', { class: 'muted' });
     const memo = el('p', { class: 'memo' });
@@ -162,7 +163,7 @@ export function createBookScreen(
       el(
         'div',
         { class: 'card pop' },
-        img,
+        thumbHost,
         el(
           'div',
           { class: 'card-body stack' },
@@ -189,8 +190,13 @@ export function createBookScreen(
       fill(recipe) {
         const n = countOf(state.data.logs, recipe.id);
         const last = lastMade(state.data.logs, recipe.id);
-        if (img.getAttribute('src') !== recipe.thumb) img.setAttribute('src', recipe.thumb);
-        img.setAttribute('alt', recipe.name);
+        // 画像は元のアドレスが変わったときだけ作り直す
+        if (thumbHost.dataset.src !== recipe.thumb) {
+          thumbHost.dataset.src = recipe.thumb;
+          clear(thumbHost);
+          thumbHost.append(thumbImg(recipe.thumb, recipe.name));
+        }
+        thumbHost.querySelector('img')?.setAttribute('alt', recipe.name);
         title.textContent = recipe.name;
         meta.textContent = `${recipe.channel ? recipe.channel + '　' : ''}${recipe.cat}`;
         memo.textContent = recipe.memo;

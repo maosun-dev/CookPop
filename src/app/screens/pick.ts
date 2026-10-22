@@ -3,7 +3,8 @@ import { el, clear } from '../ui';
 import { toast } from '../toast';
 import type { AppState } from '../state';
 import type { Mascot } from '../mascot/pon';
-import { bellyLevel, fewRecipesLine, greeting } from '../mascot/lines';
+import { bellyLevel, fewRecipesLine, greeting, isFirstVisit, moodForHour, welcomeLine } from '../mascot/lines';
+import { thumbImg } from '../thumb';
 import { countOf, lastMade, monthCount } from '../../core/log';
 import { monthOf } from '../../core/date';
 import { pickMany, pickOne } from '../../core/picker';
@@ -15,6 +16,8 @@ export interface PickDeps {
   /** 動画を見るとき。host はカード内の枠 */
   openPlayer: (host: HTMLElement, videoId: string) => void;
   now: () => Date;
+  /** 献立帳のタブへ移る（はじめましての案内のボタン用） */
+  openBook?: () => void;
 }
 
 const SPIN_TICKS = 16;
@@ -43,7 +46,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
   let choiceIds: string[] = []; // 3枚から選ぶで並べている料理
   let lastCount = state.data.recipes.length;
 
-  const dish = el('div', { class: 'dish', 'aria-live': 'polite' }, '？');
+  const dish = el('div', { class: 'dish', 'aria-live': 'polite' }, '？'); // 回している間は読み上げない
   const empty = el('p', { class: 'muted empty' });
   const choices = el('div', { class: 'choices' });
   const resultHost = el('div', { class: 'result-host' });
@@ -78,13 +81,18 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
       mascot.say('まずは献立帳で登録してね');
       return;
     }
+    if (isFirstVisit(state.data)) {
+      mascot.setMood(moodForHour(deps.now().getHours()));
+      mascot.say(welcomeLine(), { label: '献立帳へ', onClick: () => deps.openBook?.() });
+      return;
+    }
     const few = fewRecipesLine(n);
     if (few) {
       mascot.setMood('sad');
       mascot.say(few);
       return;
     }
-    mascot.setMood('normal');
+    mascot.setMood(moodForHour(deps.now().getHours()));
     mascot.say(greeting(deps.now().getHours()));
   }
 
@@ -110,7 +118,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
 
   // 結果カード：1枚だけ作って持ち、中身の文字だけ更新する（プレーヤー枠やフォーカスを保つため）
   interface ResultView {
-    img: HTMLImageElement;
+    thumbHost: HTMLElement;
     title: HTMLElement;
     meta: HTMLElement;
     memo: HTMLElement;
@@ -120,7 +128,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
 
   function buildResult(id: string): HTMLElement {
     const player = el('div', { class: 'player' });
-    const img = el('img', { src: '', alt: '', loading: 'lazy' });
+    const thumbHost = el('div', { class: 'thumb-host' });
     const title = el('h2', { class: 'card-title' });
     const meta = el('p', { class: 'muted' });
     const memo = el('p', { class: 'memo' });
@@ -128,7 +136,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
     const card = el(
       'article',
       { class: 'card pop result rise' },
-      img,
+      thumbHost,
       el(
         'div',
         { class: 'card-body stack' },
@@ -146,7 +154,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
         player,
       ),
     );
-    view = { img, title, meta, memo, count };
+    view = { thumbHost, title, meta, memo, count };
     return card;
   }
 
@@ -156,8 +164,13 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
     const logs = state.data.logs;
     const n = countOf(logs, recipe.id);
     const last = lastMade(logs, recipe.id);
-    if (view.img.getAttribute('src') !== recipe.thumb) view.img.setAttribute('src', recipe.thumb);
-    view.img.setAttribute('alt', recipe.name);
+    // 画像は元のアドレスが変わったときだけ作り直す（読めなかった代わりの絵を、むやみに読み直さない）
+    if (view.thumbHost.dataset.src !== recipe.thumb) {
+      view.thumbHost.dataset.src = recipe.thumb;
+      clear(view.thumbHost);
+      view.thumbHost.append(thumbImg(recipe.thumb, recipe.name));
+    }
+    view.thumbHost.querySelector('img')?.setAttribute('alt', recipe.name);
     view.title.textContent = recipe.name;
     view.meta.textContent = `${recipe.channel ? recipe.channel + '　' : ''}${recipe.cat}`;
     view.memo.textContent = recipe.memo;
@@ -221,7 +234,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
           'button',
           // 選ぶ瞬間の最新の料理で決める（名前を変えたあとでも古い名前にならない）
           { class: 'choice pop pop-press', type: 'button', onclick: () => decide(findRecipe(r.id) ?? r) },
-          el('img', { src: r.thumb, alt: '', loading: 'lazy' }),
+          thumbImg(r.thumb, ''),
           el('span', {}, r.name),
         ),
       );
@@ -258,6 +271,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
     mascot.say('えーと…');
     const finish = (): void => {
       spinning = false;
+      dish.setAttribute('aria-live', 'polite'); // 止まったので、決まった名前だけ読み上げる
       const picked = pickOne(base());
       paintControls();
       if (picked) {
@@ -272,6 +286,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
       return;
     }
     spinning = true;
+    dish.removeAttribute('aria-live'); // 回転中は料理名が次々変わるので読み上げない
     paintControls();
     let tick = 0;
     let wait = SPIN_FIRST_MS;
