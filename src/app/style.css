@@ -92,3 +92,59 @@ textarea.input { min-height: 88px; resize: vertical; }
 .toast[data-show="true"] { opacity: 1; }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+
+/* ===== きめる画面 ===== */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:root { --egg-white: #FFFEF8; }
+
+.pick[data-active="true"] { display: grid; gap: 16px; }
+
+/* ポン：吹き出しが上、体が下 */
+.mascot { display: grid; justify-items: center; gap: 14px; }
+.mascot svg { width: 140px; height: 140px; overflow: visible; }
+.m-shadow { fill: var(--ink); opacity: .14; }
+.m-body { fill: var(--yolk); stroke: var(--ink); stroke-width: 3; }
+.m-belly { fill: var(--egg-white); stroke: var(--ink); stroke-width: 2; transform-box: fill-box; transform-origin: center; transition: transform .3s; }
+.m-eye { fill: var(--ink); transform-box: fill-box; transform-origin: center; transition: transform .15s; }
+.m-beak { fill: var(--apricot); stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; }
+.m-hat { fill: var(--egg-white); stroke: var(--ink); stroke-width: 3; stroke-linejoin: round; }
+.m-hat-line { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; }
+.mascot[data-belly="0"] .m-belly { transform: scale(.85); }
+.mascot[data-belly="2"] .m-belly { transform: scale(1.08); }
+.mascot[data-belly="3"] .m-belly { transform: scale(1.18); }
+.mascot[data-mood="sleepy"] .m-eye, .mascot[data-mood="happy"] .m-eye { transform: scaleY(.3); }
+.mascot[data-mood="sad"] .m-eye { transform: translateY(2px); }
+.mascot[data-mood="thinking"] svg { animation: pon-wobble .5s ease-in-out infinite alternate; }
+.mascot[data-mood="decided"] svg, .mascot[data-mood="happy"] svg { animation: pon-hop .45s ease-out 1; }
+@keyframes pon-wobble { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
+@keyframes pon-hop { 0% { transform: translateY(0); } 40% { transform: translateY(-14px); } 100% { transform: translateY(0); } }
+
+.bubble { position: relative; max-width: 100%; padding: 10px 16px; border-radius: var(--r-lg); font-weight: 700;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px; text-align: center; }
+.bubble:empty { display: none; }
+.bubble::after { content: ""; position: absolute; left: 50%; bottom: -10px; width: 16px; height: 16px; background: var(--paper);
+  border-right: 2px solid var(--line); border-bottom: 2px solid var(--line); transform: translateX(-50%) rotate(45deg); }
+.bubble .btn { min-height: 36px; padding: 4px 14px; font-size: var(--fs-2); }
+
+.stage { display: grid; justify-items: center; gap: 12px; }
+.dish { width: 100%; font-size: var(--fs-6); font-weight: 900; text-align: center; line-height: 1.25; min-height: 2.4em;
+  display: grid; place-items: center; word-break: break-all; overflow-wrap: anywhere; }
+.empty:empty { display: none; }
+
+.card { overflow: hidden; border-radius: var(--r-lg); }
+.card img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-bottom: 2px solid var(--line); background: var(--cream); }
+.card-body { padding: 14px 16px 16px; }
+.card-title { font-size: var(--fs-4); font-weight: 900; line-height: 1.3; }
+.memo { white-space: pre-wrap; }
+.count { font-weight: 700; }
+.player:empty { display: none; }
+.result.rise { animation: result-rise .35s cubic-bezier(.2, .9, .3, 1.2) 1; }
+@keyframes result-rise { from { transform: translateY(32px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.choices { display: flex; gap: 10px; }
+.choices:empty { display: none; }
+.choice { flex: 1; min-width: 0; padding: 0; overflow: hidden; display: grid; align-content: start; text-align: center;
+  font-weight: 700; font-size: var(--fs-1); line-height: 1.35; border-radius: var(--r-md); }
+.choice img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-bottom: 2px solid var(--line); }
+.choice span { padding: 6px 6px 8px; word-break: break-all; overflow-wrap: anywhere; }
+.filters { gap: 10px; }
