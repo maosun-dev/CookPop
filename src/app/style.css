@@ -183,8 +183,12 @@ textarea.input { min-height: 88px; resize: vertical; }
 .icon { position: relative; display: inline-grid; place-items: center; padding: 0; border: 2px solid var(--line);
   border-radius: var(--r-pill); background: var(--paper); color: var(--ink); cursor: pointer; line-height: 1; }
 .icon::after { content: ""; position: absolute; inset: -6px; }
-.fav { position: absolute; top: 6px; right: 6px; width: 34px; height: 34px; font-size: 20px; }
+.fav { position: absolute; top: 6px; right: 6px; width: 34px; height: 34px; }
 .fav[aria-pressed="true"] { background: var(--apricot); color: var(--on-accent); }
+/* 星の絵：押していないときは輪郭だけ、押したら塗る */
+.fav svg, .fav-btn svg { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+.fav[aria-pressed="true"] svg, .fav-btn[aria-pressed="true"] svg { fill: currentColor; }
+.back svg { width: 20px; height: 20px; flex: none; }
 
 .detail .card-body > .btn { justify-self: start; }
 .detail .btn[aria-pressed="true"] { background: var(--apricot); color: var(--on-accent); }
@@ -209,7 +213,7 @@ textarea.input { min-height: 88px; resize: vertical; }
 .day[aria-pressed="true"] { background: var(--ink); color: var(--cream); }
 .day .mark { position: absolute; left: 50%; bottom: 1px; width: 14px; height: 14px; transform: translateX(-50%); line-height: 0; }
 .day .mark svg { width: 14px; height: 14px; display: block; }
-.day[data-made="true"] .day-num { transform: translateY(-3px); } /* 印のぶんだけ数字を上げる */
+.day-num { transform: translateY(-3px); } /* 印のぶんの余白を、印のある日もない日も同じにして高さをそろえる */
 
 .section-title { font-size: var(--fs-3); font-weight: 900; }
 .daylist { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }

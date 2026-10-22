@@ -1,9 +1,10 @@
 // 献立帳：登録した料理の一覧・詳細・登録/編集フォーム。画面の中で3つの表示（一覧・詳細・フォーム）を切り替える。
-import { el, clear } from '../ui';
+import { el, clear, svg } from '../ui';
 import { toast } from '../toast';
 import type { AppState } from '../state';
 import { createForm } from './form';
 import { thumbImg } from '../thumb';
+import { BACK_ICON, STAR_ICON } from '../icons';
 import type { FetchJson } from '../../core/oembed';
 import { countOf, lastMade } from '../../core/log';
 import { CATS, type Cat, type Recipe } from '../../core/recipe';
@@ -23,8 +24,13 @@ function mdLabel(date: string): string {
   return `${m}月${d}日`;
 }
 
-const STAR_ON = '★';
-const STAR_OFF = '☆';
+/** 飾りの絵（読み上げない）を要素にする */
+function icon(markup: string): SVGElement {
+  const node = svg(markup);
+  node.setAttribute('aria-hidden', 'true');
+  node.setAttribute('focusable', 'false');
+  return node;
+}
 
 type View = { kind: 'list' } | { kind: 'detail'; id: string } | { kind: 'form' };
 
@@ -44,6 +50,10 @@ export function createBookScreen(
   let detail: DetailView | null = null;
 
   const root = el('section', { class: 'screen book' });
+
+  /** 「← 献立帳」ボタン（矢印は自作の絵、読み上げ用の名前も付ける） */
+  const backButton = (): HTMLElement =>
+    el('button', { class: 'btn btn-quiet back', type: 'button', 'aria-label': '献立帳に戻る', onclick: () => showList() }, icon(BACK_ICON), el('span', {}, '献立帳'));
 
   const findRecipe = (id: string): Recipe | undefined => state.data.recipes.find(r => r.id === id);
 
@@ -94,7 +104,7 @@ export function createBookScreen(
         class: 'icon fav', type: 'button', 'aria-label': 'お気に入り', 'aria-pressed': r.fav ? 'true' : 'false',
         'data-id': r.id, onclick: () => state.toggleFav(r.id),
       },
-      r.fav ? STAR_ON : STAR_OFF,
+      icon(STAR_ICON),
     );
     return el('li', { class: 'card pop tile' }, open, fav);
   }
@@ -138,7 +148,7 @@ export function createBookScreen(
     const memo = el('p', { class: 'memo' });
     const count = el('p', { class: 'count' });
     const player = el('div', { class: 'player' });
-    const favBtn = el('button', { class: 'btn pop pop-press', type: 'button', 'aria-pressed': 'false', onclick: () => state.toggleFav(id) });
+    const favBtn = el('button', { class: 'btn pop pop-press fav-btn', type: 'button', 'aria-pressed': 'false', onclick: () => state.toggleFav(id) }, icon(STAR_ICON), el('span', {}, 'お気に入り'));
 
     const watch = (): void => {
       const r = findRecipe(id);
@@ -159,7 +169,7 @@ export function createBookScreen(
     const node = el(
       'article',
       { class: 'detail stack' },
-      el('div', { class: 'row' }, el('button', { class: 'btn btn-quiet', type: 'button', onclick: () => showList() }, '← 献立帳')),
+      el('div', { class: 'row' }, backButton()),
       el(
         'div',
         { class: 'card pop' },
@@ -203,7 +213,6 @@ export function createBookScreen(
         memo.hidden = recipe.memo === '';
         count.textContent = n > 0 && last ? `作った回数 ${n}回（最後：${mdLabel(last)}）` : 'まだ作っていません';
         favBtn.setAttribute('aria-pressed', recipe.fav ? 'true' : 'false');
-        favBtn.textContent = `${recipe.fav ? STAR_ON : STAR_OFF} お気に入り`;
       },
     };
   }
@@ -226,7 +235,7 @@ export function createBookScreen(
       el(
         'div',
         { class: 'stack' },
-        el('div', { class: 'row' }, el('button', { class: 'btn btn-quiet', type: 'button', onclick: () => showList() }, '← 献立帳')),
+        el('div', { class: 'row' }, backButton()),
         el('h1', { class: 'screen-title' }, prefill?.recipeId ? '料理を編集' : '料理を登録'),
         form.el,
       ),

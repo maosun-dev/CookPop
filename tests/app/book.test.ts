@@ -12,6 +12,8 @@ function setup(confirmAnswer = true) {
   document.body.append(scr.el);
   return { state, scr, opened };
 }
+/** 「献立帳に戻る」ボタン（矢印は絵、文字は「献立帳」） */
+const backBtn = (root: Element) => root.querySelector('button[aria-label="献立帳に戻る"]') as HTMLButtonElement;
 const btn = (root: Element, text: string) => [...root.querySelectorAll('button')].find(b => b.textContent?.trim() === text) as HTMLButtonElement;
 
 describe('献立帳', () => {
@@ -39,7 +41,7 @@ describe('献立帳', () => {
     expect(scr.el.querySelector('.detail')).toBeNull();
     expect(scr.el.querySelectorAll('.tile')).toHaveLength(7);
   });
-  it('詳細から ← 献立帳 で戻るとき、鳴っている動画を止める', () => {
+  it('詳細から 献立帳へ戻るとき、鳴っている動画を止める', () => {
     const state = createState(fake(), () => new Date(2026, 9, 23), () => 'new');
     let paused = 0;
     const scr = createBookScreen(state, { fetchJson: async () => ({}), openPlayer: () => {}, confirm: () => true, pauseAll: () => { paused++; } });
@@ -47,8 +49,40 @@ describe('献立帳', () => {
     const before = paused; // 最初の一覧づくりでも呼ばれてよい
     (scr.el.querySelector('.tile-open') as HTMLElement).click();
     expect(paused).toBe(before);
-    btn(scr.el.querySelector('.detail')!, '← 献立帳').click();
+    backBtn(scr.el.querySelector('.detail')!).click();
     expect(paused).toBe(before + 1);
+  });
+  it('戻るボタンは矢印の絵と「献立帳」の文字でできている', () => {
+    const { scr } = setup();
+    (scr.el.querySelector('.tile-open') as HTMLElement).click();
+    const back = backBtn(scr.el.querySelector('.detail')!);
+    expect(back.querySelector('svg')).not.toBeNull();
+    expect(back.textContent?.trim()).toBe('献立帳');
+    expect(back.textContent).not.toContain('←');
+  });
+  it('星のボタンは絵（svg）でできていて、押すと aria-pressed が変わる', () => {
+    const { scr, state } = setup();
+    const star = () => scr.el.querySelector('.tile .fav') as HTMLButtonElement;
+    expect(star().querySelector('svg')).not.toBeNull();
+    expect(star().textContent).toBe('');
+    expect(star().getAttribute('aria-pressed')).toBe('false');
+    star().click();
+    expect(state.data.recipes.filter(r => r.fav)).toHaveLength(1);
+    expect(star().getAttribute('aria-pressed')).toBe('true');
+    star().click();
+    expect(star().getAttribute('aria-pressed')).toBe('false');
+  });
+  it('詳細の「お気に入り」ボタンも星の絵と文字で、押すと aria-pressed が変わる', () => {
+    const { scr } = setup();
+    (scr.el.querySelector('.tile-open') as HTMLElement).click();
+    const fav = () => scr.el.querySelector('.detail .fav-btn') as HTMLButtonElement;
+    expect(fav().querySelector('svg')).not.toBeNull();
+    expect(fav().textContent?.trim()).toBe('お気に入り');
+    expect(fav().getAttribute('aria-pressed')).toBe('false');
+    fav().click();
+    expect(fav().getAttribute('aria-pressed')).toBe('true');
+    expect(fav().querySelector('svg')).not.toBeNull(); // 描き直しても絵は残る
+    expect(fav().textContent).not.toMatch(/[★☆]/);
   });
   it('削除で いいえ なら消えない', () => {
     const { scr, state } = setup(false);
@@ -60,7 +94,7 @@ describe('献立帳', () => {
     const { scr } = setup();
     btn(scr.el, '＋ 登録する').click();
     expect(scr.el.querySelector('form')).not.toBeNull();
-    btn(scr.el, '← 献立帳').click();
+    backBtn(scr.el).click();
     expect(scr.el.querySelector('form')).toBeNull();
     expect(scr.el.querySelectorAll('.tile')).toHaveLength(8);
   });

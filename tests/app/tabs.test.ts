@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
 import { createTabs, type TabDef } from '../../src/app/tabs';
-import { ICONS } from '../../src/app/icons';
+import { BACK_ICON, ICONS, STAR_ICON } from '../../src/app/icons';
 import { el } from '../../src/app/ui';
 
 const defs = (): TabDef[] => (['pick', 'book', 'log', 'settings'] as const).map(id => ({ id, label: id, icon: ICONS[id], view: el('section', { class: 'screen' }, id) }));
@@ -28,6 +28,17 @@ describe('タブ', () => {
       expect(ICONS[id].startsWith('<svg')).toBe(true);
       expect(/[\u{1F300}-\u{1FAFF}]/u.test(ICONS[id])).toBe(false);
     }
+  });
+  it('星と戻るの矢印も自作の SVG で、絵文字や文字の記号を含まない', () => {
+    for (const icon of [STAR_ICON, BACK_ICON]) {
+      expect(icon.startsWith('<svg')).toBe(true);
+      expect(/[\u{1F300}-\u{1FAFF}★☆←]/u.test(icon)).toBe(false);
+    }
+    expect(STAR_ICON).toContain('fill="currentColor"');
+    expect(STAR_ICON).toContain('viewBox="0 0 20 20"');
+    expect(BACK_ICON).toContain('viewBox="0 0 24 24"');
+    expect(BACK_ICON).toContain('stroke="currentColor"');
+    expect(BACK_ICON).toContain('stroke-width="2"');
   });
   it('きめるの「？」の点は茶碗のふちから離れ、しおりは本の右の縁から離れている', () => {
     const dot = ICONS.pick.match(/M12 ([\d.]+)v\.01/);

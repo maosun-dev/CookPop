@@ -13,3 +13,9 @@ export const ICONS: Record<TabId, string> = {
   // 設定：ふたの付いたお鍋（歯車ではなく）
   settings: `${open}<path d="M4.5 11h15v6.5a3 3 0 0 1-3 3h-9a3 3 0 0 1-3-3z"/><path d="M6 11a6 4.5 0 0 1 12 0"/><path d="M12 6.5V4.8"/><path d="M10.5 4.8h3"/><path d="M4.5 14H2.5M19.5 14h2"/></svg>`,
 };
+
+/** お気に入りの星（五芒星）。20×20、塗りは currentColor、線はなし。押していない間は CSS で輪郭だけにする */
+export const STAR_ICON = '<svg viewBox="0 0 20 20" fill="currentColor" stroke="none" stroke-linejoin="round"><path d="M10 2.4L12.06 7.97L17.99 8.2L13.33 11.88L14.94 17.6L10 14.3L5.06 17.6L6.67 11.88L2.01 8.2L7.94 7.97z"/></svg>';
+
+/** 「戻る」の左向きの矢印。24×24、線だけ、色は currentColor（タブのアイコンと同じ太さ） */
+export const BACK_ICON = `${open}<path d="M20 12H5"/><path d="M11 5.5L4.5 12L11 18.5"/></svg>`;

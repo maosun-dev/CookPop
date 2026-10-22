@@ -11,9 +11,13 @@ function setup() {
   const state = createState(fake(), () => new Date(2026, 9, 23, 19), () => 'x');
   const mascot = createMascot();
   const opened: string[] = [];
-  const scr = createPickScreen(state, { rng: () => 0, mascot, openPlayer: (_h, v) => { opened.push(v); }, now: () => new Date(2026, 9, 23, 19) });
+  const bookOpened = { count: 0 };
+  const scr = createPickScreen(state, {
+    rng: () => 0, mascot, openPlayer: (_h, v) => { opened.push(v); }, now: () => new Date(2026, 9, 23, 19),
+    openBook: () => { bookOpened.count++; },
+  });
   document.body.append(scr.el);
-  return { state, mascot, scr, opened };
+  return { state, mascot, scr, opened, bookOpened };
 }
 
 describe('きめる画面', () => {
@@ -180,8 +184,12 @@ describe('きめる画面', () => {
     expect(scr.el.querySelector('.result .card-title')!.textContent).toBe('新しい名前');
   });
   it('初めてなら はじめまして の案内と 献立帳へ のボタン', () => {
-    const { mascot, state } = setup();
+    const { mascot, state, bookOpened } = setup();
     expect(mascot.el.querySelector('.bubble')!.textContent).toContain('はじめまして');
+    const toBook = [...mascot.el.querySelectorAll('.bubble button')].find(b => b.textContent === '献立帳へ') as HTMLButtonElement;
+    expect(toBook).toBeDefined();
+    toBook.click();
+    expect(bookOpened.count).toBe(1);
     state.addRecipe({ url: 'https://youtu.be/ZZZZZZZZZZZ', name: 'x', cat: '主菜' });
     expect(mascot.el.querySelector('.bubble')!.textContent).not.toContain('はじめまして');
   });
