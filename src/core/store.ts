@@ -20,10 +20,10 @@ export interface Settings {
   theme: Theme;
   clipboardCheck: boolean;
   noAds: boolean;
-  lastClipboardUrl: string;
+  lastClipboardVideoId: string;
 }
 
-export const DEFAULT_SETTINGS: Settings = { theme: 'auto', clipboardCheck: true, noAds: false, lastClipboardUrl: '' };
+export const DEFAULT_SETTINGS: Settings = { theme: 'auto', clipboardCheck: true, noAds: false, lastClipboardVideoId: '' };
 
 export interface AppData {
   version: 1;
@@ -44,7 +44,7 @@ export function sanitizeSettings(x: unknown): Settings {
     theme: THEMES.includes(o.theme) ? (o.theme as Theme) : DEFAULT_SETTINGS.theme,
     clipboardCheck: typeof o.clipboardCheck === 'boolean' ? o.clipboardCheck : DEFAULT_SETTINGS.clipboardCheck,
     noAds: typeof o.noAds === 'boolean' ? o.noAds : DEFAULT_SETTINGS.noAds,
-    lastClipboardUrl: typeof o.lastClipboardUrl === 'string' ? o.lastClipboardUrl : '',
+    lastClipboardVideoId: typeof o.lastClipboardVideoId === 'string' ? o.lastClipboardVideoId : '',
   };
 }
 

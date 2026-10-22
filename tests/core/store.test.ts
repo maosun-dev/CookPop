@@ -40,8 +40,8 @@ describe('保存', () => {
     expect(d.settings).toEqual(DEFAULT_SETTINGS);
   });
   it('設定の検証', () => {
-    expect(sanitizeSettings({ theme: 'dark', clipboardCheck: false, noAds: true, lastClipboardUrl: 'u' })).toEqual({ theme: 'dark', clipboardCheck: false, noAds: true, lastClipboardUrl: 'u' });
-    expect(sanitizeSettings({ theme: '虹', clipboardCheck: 'no', noAds: 1, lastClipboardUrl: 2 })).toEqual(DEFAULT_SETTINGS);
+    expect(sanitizeSettings({ theme: 'dark', clipboardCheck: false, noAds: true, lastClipboardVideoId: 'u' })).toEqual({ theme: 'dark', clipboardCheck: false, noAds: true, lastClipboardVideoId: 'u' });
+    expect(sanitizeSettings({ theme: '虹', clipboardCheck: 'no', noAds: 1, lastClipboardVideoId: 2 })).toEqual(DEFAULT_SETTINGS);
     expect(sanitizeSettings(null)).toEqual(DEFAULT_SETTINGS);
   });
   it('新しい版のデータは読まない。版が数値でない・無いものは読める', () => {

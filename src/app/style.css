@@ -1,0 +1,94 @@
+/* クックポップの見た目の土台。色・角丸・文字は全部ここの変数で */
+:root {
+  --cream: #FFF6E5;      /* 画面の地 */
+  --paper: #FFFDF8;      /* カードや入力欄の地 */
+  --ink: #4A2E1C;        /* 文字と輪郭（こげ茶） */
+  --ink-soft: #8A6A55;   /* 補足の文字 */
+  --line: var(--ink);    /* 輪郭と平らな影 */
+  --yolk: #FFC43D;       /* 卵黄：いちばん大事なボタン */
+  --yolk-deep: #E8A617;
+  --apricot: #FF8A5B;    /* あんず：お気に入り・注意 */
+  --leaf: #7FC98F;       /* 若葉：作った！・できた */
+  --leaf-deep: #4F9E62;
+  --r-sm: 10px; --r-md: 16px; --r-lg: 24px; --r-pill: 999px;
+  --fs-1: 13px; --fs-2: 15px; --fs-3: 17px; --fs-4: 22px; --fs-5: 28px; --fs-6: 40px;
+  --pop-x: 4px; --pop-y: 4px;
+  --tabbar-h: 64px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --cream: #2A1D14; --paper: #3A2A1E; --ink: #FFF1DC; --ink-soft: #C9B4A3;
+    --yolk: #FFC43D; --yolk-deep: #E8A617; --apricot: #FF8A5B; --leaf: #7FC98F; --leaf-deep: #4F9E62;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --cream: #2A1D14; --paper: #3A2A1E; --ink: #FFF1DC; --ink-soft: #C9B4A3;
+  --yolk: #FFC43D; --yolk-deep: #E8A617; --apricot: #FF8A5B; --leaf: #7FC98F; --leaf-deep: #4F9E62;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--cream); color: var(--ink);
+  font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Hiragino Sans", system-ui, sans-serif;
+  font-weight: 500; font-size: var(--fs-2); line-height: 1.6;
+  -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--yolk); outline-offset: 2px; }
+h1, h2, h3, p { margin: 0; }
+
+/* ステッカー風：2px の輪郭と、右下の平らな影。押すと沈む */
+.pop {
+  background: var(--paper); border: 2px solid var(--line); border-radius: var(--r-md);
+  box-shadow: var(--pop-x) var(--pop-y) 0 var(--line);
+}
+.pop-press { cursor: pointer; transition: transform .08s, box-shadow .08s; }
+.pop-press:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--line); }
+.pop-press:disabled { opacity: .45; cursor: default; transform: none; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px;
+  padding: 8px 18px; border-radius: var(--r-pill); font-weight: 700; font-size: var(--fs-3); }
+.btn-yolk { background: var(--yolk); }
+.btn-leaf { background: var(--leaf); }
+.btn-apricot { background: var(--apricot); }
+.btn-big { min-height: 64px; padding: 12px 36px; font-size: var(--fs-5); font-weight: 900; }
+.btn-quiet { border-color: transparent; box-shadow: none; background: transparent; color: var(--ink-soft); }
+
+.chip { display: inline-flex; align-items: center; min-height: 36px; padding: 4px 14px; border: 2px solid var(--line);
+  border-radius: var(--r-pill); background: var(--paper); font-weight: 700; font-size: var(--fs-2); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--cream); }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.field { display: grid; gap: 4px; font-weight: 700; font-size: var(--fs-2); }
+.field small { font-weight: 500; color: var(--ink-soft); font-size: var(--fs-1); }
+.input { width: 100%; min-height: 44px; padding: 8px 12px; border: 2px solid var(--line); border-radius: var(--r-sm);
+  background: var(--paper); font-size: 16px; }
+textarea.input { min-height: 88px; resize: vertical; }
+
+.screen { display: none; padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(var(--tabbar-h) + 24px + env(safe-area-inset-bottom, 0px)); max-width: 560px; margin: 0 auto; }
+.screen[data-active="true"] { display: block; }
+.screen-title { font-size: var(--fs-4); font-weight: 900; margin-bottom: 12px; }
+.muted { color: var(--ink-soft); font-size: var(--fs-1); }
+.stack { display: grid; gap: 12px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; height: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px); background: var(--paper); border-top: 2px solid var(--line);
+  display: grid; grid-template-columns: repeat(4, 1fr); z-index: 10; }
+.tab { border: 0; background: transparent; display: grid; justify-items: center; gap: 2px; padding: 8px 0 6px;
+  font-size: var(--fs-1); font-weight: 700; color: var(--ink-soft); cursor: pointer; }
+.tab svg { width: 26px; height: 26px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tab[aria-selected="true"] { color: var(--ink); }
+.tab[aria-selected="true"] .tab-ico { background: var(--yolk); }
+.tab-ico { width: 44px; height: 30px; display: grid; place-items: center; border-radius: var(--r-pill); }
+
+.toast { position: fixed; left: 50%; bottom: calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  background: var(--ink); color: var(--cream); padding: 8px 18px; border-radius: var(--r-pill); font-weight: 700;
+  opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20; }
+.toast[data-show="true"] { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
