@@ -175,7 +175,7 @@ docs/            設計書・手順書・実機チェック表
 - ワークフロー `ios-testflight.yml` は SuperShogi のものをそのまま（手動実行だけ、`pull_request_target` は使わない、共同作業者は足さない）
 - Secrets：`APPLE_TEAM_ID`・`APPSTORE_API_KEY_ID`・`APPSTORE_API_ISSUER_ID`・`APPSTORE_API_PRIVATE_KEY`。p8 の中身はユーザーが入れる。ほかは前のアプリの記録から
 - App Store Connect でのアプリの登録はユーザーが行う
-- YouTube の埋め込み：Capacitor の既定（`capacitor://localhost`）だと「再生できません（エラー153）」になることがある。`server.iosScheme: "https"` にして最初の TestFlight で確かめる。だめなときのため、プレーヤーの失敗を検知して「YouTube で開く」に切り替える逃げ道を最初から入れる
+- YouTube の埋め込み：アプリの中は `capacitor://localhost` で動く。YouTube の埋め込みが「エラー153」で再生できないときは、プレーヤーの下の「YouTube で開く」で逃げられる。本当の対策（候補：maosun-dev.com にプレーヤー用の小さなページを置き、アプリからそのページを iframe で読む）は、実機で 153 が出ると分かってから決める。逃げ道として、プレーヤーの失敗を検知して「YouTube で開く」に切り替える仕組みを最初から入れる
 - 保存の戻し・写しは SuperShogi の `native.ts` と同じ
 - 文字ファイルは .woff2 だけ残す（`tools/strip-woff.mjs` を流用）
 

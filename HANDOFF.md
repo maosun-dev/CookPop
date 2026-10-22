@@ -33,7 +33,7 @@
 - ストアに載せるURL（サポートURL・マーケティングURL・プライバシーポリシーなど）は **https://maosun-dev.com/** で書く。`maosun-dev.github.io` は使わない（AdMob の app-ads.txt が辿れなくなる）
 
 ## 気をつけること
-- YouTube の埋め込み：`capacitor.config.json` の `server.iosScheme: https` で動かしている。実機で動画が「再生できません」と出たら、「YouTube で開く」への切り替えが逃げ道（チェック表の2番で確かめる）
+- YouTube の埋め込み：アプリの中は `capacitor://localhost` で動く。YouTube の埋め込みが「エラー153」で再生できないときは、プレーヤーの下の「YouTube で開く」で逃げられる。本当の対策（候補：maosun-dev.com にプレーヤー用の小さなページを置き、アプリからそのページを iframe で読む）は、実機で 153 が出ると分かってから決める
 - アイコンを作り直すとき：`npm run icon`
 - フォントは中に入れてある（fontsource の日本語の部分入り）。ネットがなくても文字が出る
 - 保存は Preferences（消えにくい保存領域）にも写してあり、起動時に戻す

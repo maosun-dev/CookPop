@@ -2,6 +2,5 @@
   "appId": "com.maosundev.cookpop",
   "appName": "クックポップ",
   "webDir": "dist",
-  "server": { "iosScheme": "https" },
   "ios": { "contentInset": "never", "backgroundColor": "#FFF6E5" }
 }
