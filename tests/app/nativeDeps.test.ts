@@ -41,10 +41,10 @@ describe('iPhone のファイル（nativeFiles）', () => {
     await expect(nativeFiles(f.plugins as never).saveText('a.json', '{}')).resolves.toBeUndefined();
   });
 
-  it('書き出しに失敗しても投げない（共有は呼ばない）', async () => {
+  it('書き出し失敗は share を呼ばず、例外を投げる', async () => {
     const f = fakePlugins();
     f.writeFile.mockRejectedValueOnce(new Error('disk'));
-    await expect(nativeFiles(f.plugins as never).saveText('a.json', '{}')).resolves.toBeUndefined();
+    await expect(nativeFiles(f.plugins as never).saveText('a.json', '{}')).rejects.toThrow('disk');
     expect(f.share).not.toHaveBeenCalled();
   });
 
@@ -53,7 +53,8 @@ describe('iPhone のファイル（nativeFiles）', () => {
     const f = fakePlugins({ pick: async () => ({ files: [{ name: 'b.json', mimeType: 'application/json', data: b64(text) }] }) });
     expect(await nativeFiles(f.plugins as never).pickText()).toBe(text);
     expect(f.pickFiles).toHaveBeenCalledWith({
-      types: ['application/json', 'public.json', 'public.text'],
+      types: ['application/json', 'text/plain'],
+      limit: 1,
       readData: true,
     });
   });
@@ -68,9 +69,19 @@ describe('iPhone のファイル（nativeFiles）', () => {
     expect(await nativeFiles(f.plugins as never).pickText()).toBeNull();
   });
 
-  it('pickText はキャンセルの例外でも null', async () => {
+  it('pickText はキャンセルの例外（pickFiles canceled.）なら null', async () => {
     const f = fakePlugins({ pick: async () => { throw new Error('pickFiles canceled.'); } });
     expect(await nativeFiles(f.plugins as never).pickText()).toBeNull();
+  });
+
+  it('pickText はキャンセル以外の例外は投げる', async () => {
+    const f = fakePlugins({ pick: async () => { throw new Error('boom'); } });
+    await expect(nativeFiles(f.plugins as never).pickText()).rejects.toThrow('boom');
+  });
+
+  it('pickText は壊れた base64 なら投げる', async () => {
+    const f = fakePlugins({ pick: async () => ({ files: [{ name: 'b.json', mimeType: 'application/json', data: '%%%壊れ' }] }) });
+    await expect(nativeFiles(f.plugins as never).pickText()).rejects.toThrow();
   });
 });
 

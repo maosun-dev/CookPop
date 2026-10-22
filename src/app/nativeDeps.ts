@@ -9,7 +9,7 @@ export interface ShareLike {
   share(o: { title: string; files: string[] }): Promise<unknown>;
 }
 export interface PickerLike {
-  pickFiles(o: { types: string[]; readData: boolean }): Promise<{ files: { data?: string; name: string; mimeType: string }[] }>;
+  pickFiles(o: { types: string[]; limit: number; readData: boolean }): Promise<{ files: { data?: string; name: string; mimeType: string }[] }>;
 }
 export interface ClipboardLike {
   read(): Promise<{ value: string; type: string }>;
@@ -31,28 +31,34 @@ function decodeBase64Utf8(b64: string): string {
   return new TextDecoder('utf-8').decode(bytes);
 }
 
-/** 書き出しは一時フォルダに保存して共有シートへ、読み込みはファイル選択。どちらもキャンセルや失敗で投げない */
+/** 書き出しは一時フォルダに保存して共有シートへ、読み込みはファイル選択。
+ *  決まり（FileDeps）：やめたときは null。失敗は投げる（画面が拾って知らせる） */
 export function nativeFiles(plugins: { Filesystem: FsLike; Share: ShareLike; FilePicker: PickerLike }): FileDeps {
   const { Filesystem, Share, FilePicker } = plugins;
   return {
     async saveText(name, text) {
-      // 共有シートを閉じる（キャンセル）と iPhone では例外になるので、すべて握る
+      // 書き出しの失敗はそのまま投げる（画面が「書き出せませんでした」を出す）
+      const { uri } = await Filesystem.writeFile({ path: name, data: text, directory: CACHE_DIR, encoding: UTF8 });
+      // 共有シートを閉じる（キャンセル）と iPhone では例外になるので、ここだけ握る
       try {
-        const { uri } = await Filesystem.writeFile({ path: name, data: text, directory: CACHE_DIR, encoding: UTF8 });
         await Share.share({ title: name, files: [uri] });
       } catch {
-        /* キャンセルや失敗は何もしない */
+        /* キャンセルは何もしない */
       }
     },
     async pickText() {
+      let files: { data?: string }[];
       try {
-        const { files } = await FilePicker.pickFiles({ types: ['application/json', 'public.json', 'public.text'], readData: true });
-        const data = files[0]?.data;
-        return data ? decodeBase64Utf8(data) : null;
-      } catch {
-        // キャンセルの例外も、読めなかったときも null
-        return null;
+        // iOS は MIME 型だけを解釈する
+        ({ files } = await FilePicker.pickFiles({ types: ['application/json', 'text/plain'], limit: 1, readData: true }));
+      } catch (e) {
+        // 選ぶのをやめたときの例外は null。それ以外は投げる
+        if (e instanceof Error && e.message.includes('canceled')) return null;
+        throw e;
       }
+      const data = files[0]?.data;
+      // 壊れた base64 などの失敗は投げる
+      return data ? decodeBase64Utf8(data) : null;
     },
   };
 }
