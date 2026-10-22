@@ -157,3 +157,14 @@ textarea.input { min-height: 88px; resize: vertical; }
 .choice img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-bottom: 2px solid var(--line); }
 .choice span { padding: 6px 6px 8px; word-break: break-all; overflow-wrap: anywhere; }
 .filters { gap: 10px; }
+
+/* 登録・編集フォーム */
+.err { margin: 0; padding: 8px 12px; border: 2px solid var(--line); border-radius: var(--r-sm); background: var(--apricot);
+  color: var(--ink); font-weight: 700; font-size: var(--fs-2); }
+.err:empty { display: none; }
+.hint { margin: 0; }
+.hint:empty { display: none; }
+.form[data-busy="true"] .hint::after { content: ''; display: inline-block; width: 8px; height: 8px; margin-left: 6px;
+  border-radius: var(--r-pill); background: var(--yolk-deep); animation: form-blink .8s ease-in-out infinite alternate; }
+@keyframes form-blink { to { opacity: .2; } }
+@media (prefers-reduced-motion: reduce) { .form[data-busy="true"] .hint::after { animation: none; } }
