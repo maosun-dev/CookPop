@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>きょうの一品</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F6F4; --surface:#FFFFFF; --ink:#22302A; --muted:#5E6E66;
+  --green:#1F5A43; --green-soft:#DDEBE3; --yolk:#F2B632; --yolk-ink:#3A2A10;
+  --line:#CFDDD5; --danger:#B3402E;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121915; --surface:#1B2520; --ink:#E6EFE9; --muted:#9DB0A6;
+    --green:#7CC9A4; --green-soft:#24372E; --yolk:#F2B632; --yolk-ink:#2A1E08;
+    --line:#2E4038; --danger:#F08A74; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121915; --surface:#1B2520; --ink:#E6EFE9; --muted:#9DB0A6;
+  --green:#7CC9A4; --green-soft:#24372E; --yolk:#F2B632; --yolk-ink:#2A1E08;
+  --line:#2E4038; --danger:#F08A74; color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  line-height:1.7;-webkit-font-smoothing:antialiased}
+main{max-width:560px;margin:0 auto;padding:20px 18px 64px}
+h1{font-size:15px;font-weight:700;color:var(--muted);margin:4px 0 0;letter-spacing:.04em}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--yolk);outline-offset:2px}
+
+/* ルーレット */
+.stage{margin:18px 0 10px;text-align:center}
+.ask{font-size:clamp(30px,9vw,44px);font-weight:900;line-height:1.25;margin:0 0 18px}
+.dish{min-height:2.6em;display:flex;align-items:center;justify-content:center;
+  font-size:clamp(24px,7vw,34px);font-weight:900;color:var(--green);padding:0 8px;word-break:break-all}
+.dish.spinning{color:var(--muted)}
+.dish.landed{animation:pop .35s ease-out}
+@keyframes pop{0%{transform:scale(.9)}60%{transform:scale(1.06)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion: reduce){.dish.landed{animation:none}}
+.filters{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:6px 0 16px}
+.chip{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:14px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--green);border-color:var(--green);color:var(--bg)}
+.roll{display:block;margin:0 auto;border:0;background:var(--yolk);color:var(--yolk-ink);
+  font-size:20px;font-weight:900;padding:16px 40px;border-radius:999px;cursor:pointer;
+  box-shadow:0 4px 0 #C98F12}
+.roll:active{transform:translateY(3px);box-shadow:0 1px 0 #C98F12}
+.roll:disabled{opacity:.5;cursor:not-allowed}
+
+/* 選ばれた料理 */
+.pick{margin-top:22px;background:var(--surface);border:1.5px solid var(--line);border-radius:18px;overflow:hidden}
+.video{position:relative;aspect-ratio:16/9;background:var(--green-soft)}
+.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.play{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-decoration:none;color:var(--green);background:var(--green-soft)}
+.play-btn{width:68px;height:48px;border-radius:14px;background:#E62117;position:relative}
+.play-btn::after{content:"";position:absolute;left:27px;top:14px;border-left:18px solid #fff;border-top:10px solid transparent;border-bottom:10px solid transparent}
+.play-name{font-weight:900;font-size:20px;padding:0 12px;text-align:center}
+.play-sub{font-size:13px;color:var(--muted)}
+.play:hover .play-btn{filter:brightness(1.1)}
+.pick-body{padding:14px 16px 16px}
+.meta{font-size:13px;color:var(--muted);margin:0}
+.memo{white-space:pre-wrap;margin:8px 0 0;font-size:15px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.btn{border:1.5px solid var(--line);background:transparent;border-radius:10px;padding:7px 14px;cursor:pointer;font-size:15px;text-decoration:none;color:var(--ink);display:inline-flex;align-items:center;gap:4px}
+.btn.primary{background:var(--green);border-color:var(--green);color:var(--bg)}
+
+/* 一覧 */
+section{margin-top:40px}
+h2{font-size:20px;font-weight:900;margin:0 0 10px;display:flex;justify-content:space-between;align-items:baseline}
+h2 small{font-size:13px;font-weight:500;color:var(--muted)}
+.list{list-style:none;margin:0;padding:0;border-top:1.5px solid var(--line)}
+.list li{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1.5px solid var(--line)}
+.list .tag{font-size:12px;background:var(--green-soft);color:var(--green);border-radius:6px;padding:1px 7px;flex-shrink:0}
+.list .name{flex:1;min-width:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.icon{border:0;background:transparent;cursor:pointer;font-size:18px;padding:4px 6px;border-radius:8px;color:var(--muted)}
+.icon.fav[aria-pressed="true"]{color:var(--yolk)}
+.empty{color:var(--muted);padding:16px 0}
+
+/* 追加フォーム */
+form{display:grid;gap:10px;background:var(--surface);border:1.5px solid var(--line);border-radius:18px;padding:16px}
+label{display:grid;gap:3px;font-size:14px;font-weight:700}
+label span{font-weight:500;color:var(--muted);font-size:12px}
+input,select,textarea{width:100%;border:1.5px solid var(--line);background:var(--bg);border-radius:10px;padding:9px 11px;font-size:16px}
+textarea{min-height:70px;resize:vertical}
+.err{color:var(--danger);font-size:14px;margin:0;min-height:1em}
+.note{font-size:12px;color:var(--muted);margin-top:30px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<main>
+  <h1>きょうの一品</h1>
+
+  <div class="stage">
+    <p class="ask">今日、なに作る？</p>
+    <div class="filters" id="filters" role="group" aria-label="ジャンルでしぼる"></div>
+    <div class="dish" id="dish" aria-live="polite">　</div>
+    <button class="roll" id="roll">決めてもらう</button>
+  </div>
+
+  <div id="pick"></div>
+
+  <section>
+    <h2>登録した料理 <small id="count"></small></h2>
+    <div class="filters" style="justify-content:flex-start" role="group" aria-label="表示">
+      <button class="chip" id="showAll" aria-pressed="true">すべて</button>
+      <button class="chip" id="showFav" aria-pressed="false">★お気に入り</button>
+    </div>
+    <ul class="list" id="list"></ul>
+  </section>
+
+  <section>
+    <h2>料理を登録する</h2>
+    <form id="form">
+      <label>YouTubeのリンク<input id="fUrl" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=…" required></label>
+      <label>料理の名前<input id="fName" type="text" maxlength="40" placeholder="例：豚こまのしょうが焼き" required></label>
+      <label>ジャンル<select id="fCat"></select></label>
+      <label>チャンネル名 <span>なくてもOK</span><input id="fCh" type="text" maxlength="40"></label>
+      <label>メモ <span>材料や作ったときの感想を自分の言葉で</span><textarea id="fMemo" maxlength="400"></textarea></label>
+      <p class="err" id="fErr"></p>
+      <button class="btn primary" type="submit" style="justify-self:start">登録する</button>
+    </form>
+  </section>
+
+  <p class="note">動画はYouTubeの公式プレーヤーで再生します。再生できない動画は「YouTubeで見る」から開いてください。</p>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const CATS = ["主菜","副菜","汁物","ご飯・麺","おやつ"];
+let state = { recipes: [] };
+let filterCat = "すべて", listFav = false, lastId = null, spinning = false;
+let saveToDb = null;
+const LS_KEY = "kyouno-ippin-v1";
+
+const $ = id => document.getElementById(id);
+const uid = () => Math.random().toString(36).slice(2,10) + Date.now().toString(36);
+
+function ytId(url){
+  try{
+    const u = new URL(url.trim());
+    const h = u.hostname.replace(/^www\.|^m\./,"");
+    if(h === "youtu.be") return u.pathname.slice(1).split("/")[0] || null;
+    if(h.endsWith("youtube.com") || h.endsWith("youtube-nocookie.com")){
+      if(u.searchParams.get("v")) return u.searchParams.get("v");
+      const m = u.pathname.match(/\/(shorts|embed|live)\/([\w-]{6,})/);
+      if(m) return m[2];
+    }
+  }catch(e){}
+  return null;
+}
+
+function toast(msg){
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove("show"),1800);
+}
+
+/* 保存：使えるならクラウド、だめならこの端末 */
+const KK = "Koh Kentetsu Kitchen";
+const DEFAULTS = [
+  ["HzLAMA5ck_8","よだれ水餃子","主菜"],
+  ["m10e2igEArE","チキンプルコギ","主菜"],
+  ["kd6n-8uQdWo","豚プルコギ","主菜"],
+  ["4pi3UGSfvig","豆腐つくね","主菜"],
+  ["HMWVJFsgfQY","ポン酢チキン","主菜"],
+  ["dbv6nPx4e3c","オムそば","ご飯・麺"],
+  ["fsUZY-9V1TI","スパムとキムチごはんのお弁当","ご飯・麺"],
+  ["30kBepMXiVE","ベーコンエッグサンド","ご飯・麺"]
+].map(([v,name,cat])=>({ id:"d-"+v, url:"https://www.youtube.com/watch?v="+v, name, cat, ch:KK, memo:"", fav:false, made:0, lastMade:"" }));
+
+function loadLocal(){
+  let found = false;
+  try{ const s = localStorage.getItem(LS_KEY); if(s){ state = JSON.parse(s); found = true; } }catch(e){}
+  if(!Array.isArray(state.recipes)) state.recipes = [];
+  if(!found) state.recipes = DEFAULTS.map(r=>({...r}));
+}
+async function save(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
+  if(saveToDb){ try{ await saveToDb(); }catch(e){} }
+}
+async function connectDb(){
+  if(!window.claude || !window.claude.use) return;
+  const [db, user] = await Promise.all([claude.use("db"), claude.use("user")]);
+  if(!db || !user) return;
+  const id = await user.id(); if(!id) return;
+  const ref = db.doc("data/users/" + id + "/kondate");
+  try{
+    const snap = await ref.get();
+    if(snap.exists){
+      const d = snap.data();
+      if(d && Array.isArray(d.recipes)){ state = { recipes: d.recipes.map(r=>({...r})) }; render(); }
+    }else if(state.recipes.length){
+      await ref.set({ recipes: state.recipes });
+    }
+    saveToDb = () => ref.set({ recipes: state.recipes });
+  }catch(e){}
+}
+
+function pool(){
+  return state.recipes.filter(r => filterCat === "すべて" || r.cat === filterCat);
+}
+
+function renderFilters(){
+  const f = $("filters"); f.innerHTML = "";
+  ["すべて", ...CATS].forEach(c=>{
+    const b = document.createElement("button");
+    b.className = "chip"; b.textContent = c;
+    b.setAttribute("aria-pressed", String(c === filterCat));
+    b.onclick = ()=>{ filterCat = c; renderFilters(); updateRoll(); };
+    f.appendChild(b);
+  });
+}
+function updateRoll(){
+  const n = pool().length;
+  $("roll").disabled = spinning || n === 0;
+  if(!spinning && !lastId){
+    $("dish").textContent = state.recipes.length === 0 ? "まずは下で料理を登録してね"
+      : n === 0 ? "このジャンルはまだ登録がありません" : "　";
+    $("dish").classList.toggle("spinning", n === 0 || state.recipes.length === 0);
+  }
+}
+
+function renderPick(r){
+  const box = $("pick");
+  if(!r){ box.innerHTML = ""; return; }
+  const vid = ytId(r.url);
+  box.innerHTML = "";
+  const card = document.createElement("article"); card.className = "pick";
+  if(vid){
+    const v = document.createElement("div"); v.className = "video";
+    const f = document.createElement("iframe");
+    f.src = "https://www.youtube-nocookie.com/embed/" + encodeURIComponent(vid) + "?rel=0&playsinline=1";
+    f.title = r.name + "の動画";
+    f.referrerPolicy = "strict-origin-when-cross-origin";
+    f.allow = "accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen";
+    f.allowFullscreen = true;
+    v.appendChild(f); card.appendChild(v);
+  }
+  const body = document.createElement("div"); body.className = "pick-body";
+  const meta = document.createElement("p"); meta.className = "meta";
+  const made = r.made ? `作った回数 ${r.made}回（最後：${r.lastMade}）` : "まだ作っていません";
+  meta.textContent = [r.cat, r.ch, made].filter(Boolean).join("／");
+  body.appendChild(meta);
+  if(r.memo){ const m = document.createElement("p"); m.className="memo"; m.textContent = r.memo; body.appendChild(m); }
+  const row = document.createElement("div"); row.className = "row";
+  const a = document.createElement("a"); a.className="btn"; a.href = r.url; a.target="_blank"; a.rel="noopener"; a.textContent="YouTubeで見る";
+  const madeBtn = document.createElement("button"); madeBtn.className="btn primary"; madeBtn.textContent="作った！";
+  madeBtn.onclick = async ()=>{
+    r.made = (r.made||0) + 1;
+    const d = new Date(); r.lastMade = `${d.getMonth()+1}月${d.getDate()}日`;
+    await save(); renderPick(r); renderList(); toast("記録しました");
+  };
+  const fav = document.createElement("button"); fav.className="btn";
+  fav.textContent = r.fav ? "★お気に入り" : "☆お気に入り";
+  fav.onclick = async ()=>{ r.fav = !r.fav; await save(); renderPick(r); renderList(); };
+  row.append(madeBtn, a, fav); body.appendChild(row);
+  card.appendChild(body); box.appendChild(card);
+}
+
+function renderList(){
+  const ul = $("list"); ul.innerHTML = "";
+  const items = state.recipes.filter(r => !listFav || r.fav);
+  $("count").textContent = state.recipes.length + "品";
+  if(items.length === 0){
+    const li = document.createElement("li"); li.className = "empty";
+    li.textContent = listFav ? "お気に入りはまだありません。☆を押すと追加できます。" : "まだ何もありません。下のフォームから好きな料理動画を登録しましょう。";
+    ul.appendChild(li); return;
+  }
+  items.forEach(r=>{
+    const li = document.createElement("li");
+    const tag = document.createElement("span"); tag.className="tag"; tag.textContent = r.cat;
+    const nm = document.createElement("span"); nm.className="name"; nm.textContent = r.name;
+    const fav = document.createElement("button"); fav.className="icon fav";
+    fav.setAttribute("aria-pressed", String(!!r.fav)); fav.setAttribute("aria-label","お気に入り");
+    fav.textContent = r.fav ? "★" : "☆";
+    fav.onclick = async ()=>{ r.fav = !r.fav; await save(); renderList(); if(lastId===r.id) renderPick(r); };
+    const open = document.createElement("button"); open.className="icon"; open.textContent="▶"; open.setAttribute("aria-label", r.name + "を表示");
+    open.onclick = ()=>{ lastId = r.id; land(r); $("pick").scrollIntoView({behavior:"smooth",block:"start"}); };
+    const del = document.createElement("button"); del.className="icon"; del.textContent="✕"; del.setAttribute("aria-label", r.name + "を削除");
+    del.onclick = async ()=>{
+      if(!confirm(`「${r.name}」を削除しますか？`)) return;
+      state.recipes = state.recipes.filter(x=>x.id!==r.id);
+      if(lastId === r.id){ lastId = null; renderPick(null); }
+      await save(); render();
+    };
+    li.append(tag, nm, fav, open, del); ul.appendChild(li);
+  });
+}
+
+function land(r){
+  const d = $("dish");
+  d.textContent = r.name; d.classList.remove("spinning","landed"); void d.offsetWidth; d.classList.add("landed");
+  renderPick(r);
+}
+
+$("roll").onclick = ()=>{
+  const p = pool(); if(!p.length || spinning) return;
+  let choices = p.length > 1 ? p.filter(r=>r.id!==lastId) : p;
+  const pick = choices[Math.floor(Math.random()*choices.length)];
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(reduce || p.length === 1){ lastId = pick.id; land(pick); return; }
+  spinning = true; updateRoll();
+  const d = $("dish"); d.classList.add("spinning"); d.classList.remove("landed");
+  let i = 0, delay = 50; const steps = 16;
+  (function tick(){
+    d.textContent = p[Math.floor(Math.random()*p.length)].name;
+    if(++i < steps){ delay *= 1.15; setTimeout(tick, delay); }
+    else{ spinning = false; lastId = pick.id; land(pick); updateRoll(); }
+  })();
+};
+
+$("showAll").onclick = ()=>{ listFav=false; $("showAll").setAttribute("aria-pressed","true"); $("showFav").setAttribute("aria-pressed","false"); renderList(); };
+$("showFav").onclick = ()=>{ listFav=true; $("showAll").setAttribute("aria-pressed","false"); $("showFav").setAttribute("aria-pressed","true"); renderList(); };
+
+CATS.forEach(c=>{ const o=document.createElement("option"); o.value=c; o.textContent=c; $("fCat").appendChild(o); });
+$("form").onsubmit = async e=>{
+  e.preventDefault();
+  const url = $("fUrl").value.trim(), name = $("fName").value.trim();
+  if(!ytId(url)){ $("fErr").textContent = "YouTubeの動画リンクを貼ってください（youtube.com か youtu.be のもの）。"; return; }
+  if(!name){ $("fErr").textContent = "料理の名前を入れてください。"; return; }
+  $("fErr").textContent = "";
+  state.recipes.push({ id: uid(), url, name, cat: $("fCat").value, ch: $("fCh").value.trim(), memo: $("fMemo").value.trim(), fav:false, made:0, lastMade:"" });
+  await save();
+  e.target.reset(); render(); toast(`「${name}」を登録しました`);
+};
+
+function render(){ renderFilters(); renderList(); updateRoll(); }
+loadLocal(); render(); connectDb();
+</script>
+</body>
+</html>
