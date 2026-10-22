@@ -5,9 +5,14 @@ import '@fontsource/zen-maru-gothic/japanese-700.css';
 import '@fontsource/zen-maru-gothic/japanese-900.css';
 import './style.css';
 import './mascot/pon.css';
+import { Clipboard } from '@capacitor/clipboard';
+import { Filesystem } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
+import { FilePicker } from '@capawesome/capacitor-file-picker';
 import { watchClipboard } from './clipboardCheck';
 import { suggestHandler } from './clipboardWire';
 import { webFiles } from './files';
+import { nativeClipboardRead, nativeFiles, nativeOpenExternal, type FsLike } from './nativeDeps';
 import { newId } from './ids';
 import { ICONS } from './icons';
 import { createMascot } from './mascot/pon';
@@ -32,18 +37,25 @@ async function boot(): Promise<void> {
   const state = createState(store, () => new Date(), newId);
   applyTheme(state.data.settings.theme);
 
+  const native = isNativeApp();
+  // iPhone では動画を外のブラウザ（YouTube アプリ・Safari）で開く。Web ではそのまま
+  const openExternal = native ? nativeOpenExternal(window) : undefined;
+  const openVideo = (host: HTMLElement, videoId: string): void => openPlayer(host, videoId, { openExternal });
+  // Filesystem の directory / encoding は enum 型なので、文字列で受ける FsLike へは型だけ合わせる（中身は同じ文字列）
+  const files = native ? nativeFiles({ Filesystem: Filesystem as FsLike, Share, FilePicker }) : webFiles();
+
   const mascot = createMascot();
   const pick = createPickScreen(state, {
     rng: Math.random,
     mascot,
     now: () => new Date(),
-    openPlayer: (host, videoId) => openPlayer(host, videoId),
+    openPlayer: openVideo,
     openBook: () => tabs.select('book'),
   });
 
   const book = createBookScreen(state, {
     fetchJson: url => fetch(url).then(r => r.json()),
-    openPlayer: (host, videoId) => openPlayer(host, videoId),
+    openPlayer: openVideo,
     confirm: msg => window.confirm(msg),
     pauseAll: pauseAllPlayers,
   });
@@ -58,7 +70,7 @@ async function boot(): Promise<void> {
   });
 
   const settings = createSettingsScreen(state, {
-    files: webFiles(),
+    files,
     version: __APP_VERSION__,
     // 計画2ではブラウザの確認ダイアログを2段で使う
     confirmMode: async () => {
@@ -83,7 +95,7 @@ async function boot(): Promise<void> {
 
   // クリップボードに新しい動画のリンクがあれば、ポンが登録を聞く
   watchClipboard({
-    read: async () => {
+    read: native ? nativeClipboardRead(Clipboard) : async () => {
       try {
         return navigator.clipboard?.readText ? await navigator.clipboard.readText() : '';
       } catch {
