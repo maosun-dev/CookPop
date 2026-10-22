@@ -5,9 +5,8 @@ import { deflateSync } from 'node:zlib';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Resvg } from '@resvg/resvg-js';
-import { iconSvg, splashSvg } from './icon.mjs';
+import { CREAM, iconSvg, splashSvg } from './icon.mjs';
 
-const CREAM = '#FFF6E5';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const assets = join(root, 'ios', 'App', 'App', 'Assets.xcassets');
 
@@ -67,20 +66,26 @@ function crc32(buf) {
   return ~c >>> 0;
 }
 
+/** 置き場所のフォルダが無ければ作ってから書く */
+function write(path, data) {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, data);
+}
+
 /** 書き出し本体（直接実行のときだけ呼ぶ） */
 function main() {
   const out = join(root, 'art', 'out');
   mkdirSync(out, { recursive: true });
   const icon = renderRgbPng(iconSvg(), 1024);
   const splash = renderRgbPng(splashSvg(), 2732);
-  writeFileSync(join(out, 'icon-1024.png'), icon);
-  writeFileSync(join(out, 'splash-2732.png'), splash);
+  write(join(out, 'icon-1024.png'), icon);
+  write(join(out, 'splash-2732.png'), splash);
 
   // iOS のプロジェクトができていれば、Xcode の置き場所にも書く
   if (existsSync(assets)) {
-    writeFileSync(join(assets, 'AppIcon.appiconset', 'AppIcon-512@2x.png'), icon);
+    write(join(assets, 'AppIcon.appiconset', 'AppIcon-512@2x.png'), icon);
     for (const name of ['splash-2732x2732.png', 'splash-2732x2732-1.png', 'splash-2732x2732-2.png']) {
-      writeFileSync(join(assets, 'Splash.imageset', name), splash);
+      write(join(assets, 'Splash.imageset', name), splash);
     }
   }
 
@@ -89,7 +94,7 @@ function main() {
   if (preview) {
     const dir = resolve(preview.slice('--preview='.length));
     mkdirSync(dir, { recursive: true });
-    writeFileSync(join(dir, 'icon-60.png'), renderRgbPng(iconSvg(), 60));
+    write(join(dir, 'icon-60.png'), renderRgbPng(iconSvg(), 60));
   }
   console.log(`アイコンと起動画面を書き出した（art/out${existsSync(assets) ? ' と Assets.xcassets' : ''}）`);
 }

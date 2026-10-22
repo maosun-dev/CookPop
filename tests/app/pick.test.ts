@@ -193,6 +193,16 @@ describe('きめる画面', () => {
     state.addRecipe({ url: 'https://youtu.be/ZZZZZZZZZZZ', name: 'x', cat: '主菜' });
     expect(mascot.el.querySelector('.bubble')!.textContent).not.toContain('はじめまして');
   });
+  it('はじめましては、その起動で きめて！ を押したあとは戻らない', () => {
+    const { mascot, scr, state } = setup();
+    expect(mascot.el.querySelector('.bubble')!.textContent).toContain('はじめまして');
+    (scr.el.querySelector('#roll') as HTMLButtonElement).click(); // 作った！は押さない
+    // 設定の変更（購読の描き直し）でも、料理の数が変わっても、はじめましてには戻らない
+    state.updateSettings({ theme: 'dark' });
+    expect(mascot.el.querySelector('.bubble')!.textContent).not.toContain('はじめまして');
+    state.deleteRecipe(state.data.recipes[state.data.recipes.length - 1].id);
+    expect(mascot.el.querySelector('.bubble')!.textContent).not.toContain('はじめまして');
+  });
   it('深夜はポンが眠い', () => {
     // setup の now を 23 時にした版
     Object.defineProperty(window, 'matchMedia', { writable: true, value: () => ({ matches: true, addEventListener() {}, removeEventListener() {} }) });

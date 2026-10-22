@@ -45,6 +45,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
   let currentId: string | null = null; // 結果カードに出している料理
   let choiceIds: string[] = []; // 3枚から選ぶで並べている料理
   let lastCount = state.data.recipes.length;
+  let rolled = false; // この起動で「きめて！」を押したか（はじめましての案内は、その起動で1回だけ。保存しない）
 
   const dish = el('div', { class: 'dish', 'aria-live': 'polite' }, '？'); // 回している間は読み上げない
   const empty = el('p', { class: 'muted empty' });
@@ -81,7 +82,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
       mascot.say('まずは献立帳で登録してね');
       return;
     }
-    if (isFirstVisit(state.data)) {
+    if (!rolled && isFirstVisit(state.data)) {
       mascot.setMood(moodForHour(deps.now().getHours()));
       mascot.say(welcomeLine(), { label: '献立帳へ', onClick: () => deps.openBook?.() });
       return;
@@ -249,6 +250,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
   function roll(extraExclude: string[]): void {
     if (spinning) return;
     if (candidates().length === 0) return;
+    rolled = true; // これ以降は、はじめましてではなく時間帯の挨拶に戻す
     const exclude = [...extraExclude];
     if (currentId !== null && !exclude.includes(currentId)) exclude.push(currentId);
     // 候補は呼ぶたびに取り直す（回している間に料理が増減することがある）

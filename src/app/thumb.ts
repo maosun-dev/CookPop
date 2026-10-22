@@ -10,16 +10,17 @@ export const PON_FACE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40
   <rect x="9" y="5.5" width="22" height="6.5" rx="2.6" fill="#FFFDF8" stroke="#4A2E1C" stroke-width="2.2" stroke-linejoin="round"/>
 </svg>`;
 
-/** サムネイルの <img>。読み込みに失敗したら代わりの絵（.thumb-fallback）に置き換わる */
+/** サムネイルの <img>。読み込みに失敗したとき、または YouTube が「動画が無い」ときに返す 120×90 の灰色の画像だったときは、代わりの絵（.thumb-fallback）に置き換わる */
 export function thumbImg(src: string, alt: string): HTMLElement {
   const img = el('img', { src, alt, loading: 'lazy' });
-  img.addEventListener(
-    'error',
-    () => {
-      const fallback = el('div', { class: 'thumb-fallback', 'aria-hidden': 'true' }, svg(PON_FACE));
-      img.replaceWith(fallback);
-    },
-    { once: true },
-  );
+  const replace = (): void => {
+    const fallback = el('div', { class: 'thumb-fallback', 'aria-hidden': 'true' }, svg(PON_FACE));
+    img.replaceWith(fallback);
+  };
+  img.addEventListener('error', replace, { once: true });
+  // 削除された動画は、エラーにならず小さな灰色の画像（120×90）が返ってくる
+  img.addEventListener('load', () => {
+    if (img.naturalWidth === 120 && img.naturalHeight === 90) replace();
+  });
   return img;
 }

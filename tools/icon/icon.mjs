@@ -1,6 +1,6 @@
 // アイコンと起動画面の SVG。ポンの絵は docs/mockups/pon.html の PON から手で写したもの。
 // CSS は使えない（resvg に渡す）ので、色と線は属性で直接書く。
-const CREAM = '#FFF6E5'; // 地の色（クリーム）
+export const CREAM = '#FFF6E5'; // 地の色（クリーム）
 const YOLK = '#FFC43D'; // 体・羽
 const INK = '#4A2E1C'; // 線・目
 const PAPER = '#FFFDF8'; // おなか・帽子

@@ -25,5 +25,7 @@ describe('ポンの絵', () => {
     expect(css).toMatch(/prefers-reduced-motion: reduce[^}]*\{[^}]*animation: none/);
     for (const mood of ['thinking', 'decided', 'happy', 'full', 'sad', 'sleepy']) expect(css).toContain(`[data-mood="${mood}"]`);
     expect(css).toContain('[data-belly="3"]');
+    // 揺れの軸は割合で決める（絵の大きさが変わってもおなかの下に残る）
+    expect(css).toContain('transform-origin: 50% 87%');
   });
 });
