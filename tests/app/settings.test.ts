@@ -37,4 +37,39 @@ describe('設定', () => {
     await tick();
     expect(document.querySelector('.toast')!.textContent).toContain('読めませんでした');
   });
+  it('書き出しに失敗したら「書き出せませんでした」', async () => {
+    const state = createState(fake(), () => new Date(2026, 9, 23), () => 'x');
+    const scr = createSettingsScreen(state, { files: { saveText: async () => { throw new Error('disk'); }, pickText: async () => null }, confirmMode: async () => 'replace', version: '0.1.0' });
+    btn(scr.el, '書き出す').click();
+    await tick();
+    expect(document.querySelector('.toast')!.textContent).toBe('書き出せませんでした');
+  });
+  it('ファイルを選ぶのに失敗したら「読み込めませんでした」。データは変わらない', async () => {
+    const state = createState(fake(), () => new Date(2026, 9, 23), () => 'x');
+    const scr = createSettingsScreen(state, { files: { saveText: async () => {}, pickText: async () => { throw new Error('picker'); } }, confirmMode: async () => 'replace', version: '0.1.0' });
+    btn(scr.el, '読み込む').click();
+    await tick();
+    expect(document.querySelector('.toast')!.textContent).toBe('読み込めませんでした');
+    expect(state.data.recipes).toHaveLength(8);
+  });
+  it('読み込み方を聞くのに失敗しても「読み込めませんでした」', async () => {
+    const state = createState(fake(), () => new Date(2026, 9, 23), () => 'x');
+    const scr = createSettingsScreen(state, { files: { saveText: async () => {}, pickText: async () => '{}' }, confirmMode: async () => { throw new Error('dialog'); }, version: '0.1.0' });
+    btn(scr.el, '読み込む').click();
+    await tick();
+    expect(document.querySelector('.toast')!.textContent).toBe('読み込めませんでした');
+  });
+  it('ファイル選びをやめたら（null）、何も出ない', async () => {
+    const state = createState(fake(), () => new Date(2026, 9, 23), () => 'x');
+    const scr = createSettingsScreen(state, { files: { saveText: async () => {}, pickText: async () => null }, confirmMode: async () => 'replace', version: '0.1.0' });
+    // 直前のトーストの文言を目印にして、変わらないことを確かめる
+    btn(scr.el, '書き出す').click();
+    await tick();
+    const before = document.querySelector('.toast')!.textContent;
+    expect(before).toBe('書き出しました');
+    btn(scr.el, '読み込む').click();
+    await tick();
+    expect(document.querySelector('.toast')!.textContent).toBe(before);
+    expect(state.data.recipes).toHaveLength(8);
+  });
 });

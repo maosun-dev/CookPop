@@ -30,13 +30,24 @@ export function createSettingsScreen(state: AppState, deps: SettingsDeps): { el:
 
   // ===== バックアップ =====
   async function exportBackup(): Promise<void> {
-    await deps.files.saveText(`cookpop-backup-${state.today()}.json`, state.exportBackup());
-    toast('書き出しました');
+    try {
+      await deps.files.saveText(`cookpop-backup-${state.today()}.json`, state.exportBackup());
+      toast('書き出しました');
+    } catch {
+      toast('書き出せませんでした');
+    }
   }
   async function importBackup(): Promise<void> {
-    const raw = await deps.files.pickText();
-    if (raw === null) return;
-    const mode = await deps.confirmMode();
+    let raw: string | null;
+    let mode: 'replace' | 'merge' | null;
+    try {
+      raw = await deps.files.pickText();
+      if (raw === null) return; // やめた
+      mode = await deps.confirmMode();
+    } catch {
+      toast('読み込めませんでした');
+      return;
+    }
     if (mode === null) return;
     toast(state.importBackup(raw, mode) ? '読み込みました' : '読めませんでした。クックポップのバックアップを選んでね');
   }

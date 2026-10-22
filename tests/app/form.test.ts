@@ -62,4 +62,23 @@ describe('登録フォーム', () => {
     expect(state.data.recipes[0].name).toBe('水餃子（よだれ）');
     expect(done).toBe(1);
   });
+  it('空のままリンク欄から離れても、エラーは出ない。登録ボタンでは案内が出る', () => {
+    const state = mkState();
+    const f = createForm(state, { fetchJson: async () => ({}), onDone: () => {} });
+    const url = input(f.el, 'url');
+    url.value = 'https://example.com/x';
+    url.dispatchEvent(new Event('input'));
+    expect(f.el.querySelector('.err')!.textContent).toContain('動画リンクを貼ってください');
+    // 消して空にすると、エラーも消える
+    url.value = '  ';
+    url.dispatchEvent(new Event('input'));
+    expect(f.el.querySelector('.err')!.textContent).toBe('');
+    url.dispatchEvent(new Event('blur'));
+    expect(f.el.querySelector('.err')!.textContent).toBe('');
+    f.setUrl('');
+    expect(f.el.querySelector('.err')!.textContent).toBe('');
+    input(f.el, 'name').value = 'x';
+    (f.el.querySelector('form') as HTMLFormElement).requestSubmit();
+    expect(f.el.querySelector('.err')!.textContent).toContain('動画リンクを貼ってください');
+  });
 });

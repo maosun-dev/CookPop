@@ -1,5 +1,8 @@
 // ファイルの書き出しと読み込み。画面からは FileDeps だけを見る（テストでは差し替える）。
 
+/**
+ * 決まり：キャンセルは pickText が null を返す。失敗（例外）は投げてよい（画面が拾って知らせる）。
+ */
 export interface FileDeps {
   /** テキストをファイルとして保存する */
   saveText(name: string, text: string): Promise<void>;
@@ -18,7 +21,8 @@ export function webFiles(): FileDeps {
       document.body.append(a);
       a.click();
       a.remove();
-      URL.revokeObjectURL(url);
+      // すぐ解放すると Safari でダウンロードが始まる前に消えることがあるので、少し待つ
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     },
     pickText() {
       return new Promise(resolve => {

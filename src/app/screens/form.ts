@@ -67,9 +67,16 @@ export function createForm(state: AppState, deps: FormDeps): { el: HTMLElement; 
     }
   }
 
-  /** リンク欄を調べる。読めない・登録済みなら案内を出して false */
-  function checkUrl(): boolean {
+  /**
+   * リンク欄を調べる。読めない・登録済みなら案内を出して false。
+   * quietIfEmpty：空の欄は、まだ何も入れていないだけなので責めない（入力中・欄を離れたとき用。登録ボタンでは責める）
+   */
+  function checkUrl(quietIfEmpty = false): boolean {
     if (!urlInput) return true;
+    if (quietIfEmpty && urlInput.value.trim() === '') {
+      showError('');
+      return false;
+    }
     const videoId = parseVideoId(urlInput.value);
     if (!videoId) {
       showError('YouTube の動画リンクを貼ってください');
@@ -139,8 +146,8 @@ export function createForm(state: AppState, deps: FormDeps): { el: HTMLElement; 
     for (const ev of ['input', 'paste', 'blur']) {
       // paste は貼り付けた文字が入ってから読みたいので、1拍おく
       urlInput.addEventListener(ev, () => {
-        if (ev === 'paste') setTimeout(checkUrl, 0);
-        else checkUrl();
+        if (ev === 'paste') setTimeout(() => checkUrl(true), 0);
+        else checkUrl(true);
       });
     }
   }
@@ -160,7 +167,7 @@ export function createForm(state: AppState, deps: FormDeps): { el: HTMLElement; 
   function setUrl(url: string): void {
     if (!urlInput) return;
     urlInput.value = url;
-    checkUrl();
+    checkUrl(true);
   }
 
   if (deps.prefill?.url) setUrl(deps.prefill.url);

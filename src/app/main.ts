@@ -4,6 +4,7 @@ import '@fontsource/zen-maru-gothic/700.css';
 import '@fontsource/zen-maru-gothic/900.css';
 import './style.css';
 import { watchClipboard } from './clipboardCheck';
+import { suggestHandler } from './clipboardWire';
 import { webFiles } from './files';
 import { newId } from './ids';
 import { ICONS } from './icons';
@@ -17,6 +18,7 @@ import { createState } from './state';
 import { safeStore } from './storage';
 import { createTabs } from './tabs';
 import { applyTheme } from './theme';
+import { toast } from './toast';
 
 const state = createState(safeStore(), () => new Date(), newId);
 applyTheme(state.data.settings.theme);
@@ -75,14 +77,5 @@ watchClipboard({
     }
   },
   state,
-  onSuggest: (_videoId, url) => {
-    mascot.say('クリップボードに動画のリンクがあるよ。登録する？', {
-      label: '登録する',
-      onClick: () => {
-        tabs.select('book');
-        book.openForm(url);
-        mascot.hush();
-      },
-    });
-  },
+  onSuggest: suggestHandler({ mascot, tabs, book, toast }),
 });
