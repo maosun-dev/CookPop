@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { createState } from '../../src/app/state';
 import { createMascot } from '../../src/app/mascot/pon';
 import { createPickScreen } from '../../src/app/screens/pick';
@@ -64,5 +64,83 @@ describe('きめる画面', () => {
     for (const r of [...state.data.recipes]) state.deleteRecipe(r.id);
     expect(mascot.el.querySelector('.bubble')!.textContent).toContain('献立帳で登録');
     expect((scr.el.querySelector('#roll') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('回している最中に料理が消えても、消えた料理では止まらない', () => {
+    const { scr, state } = setup();
+    window.matchMedia = (() => ({ matches: false, addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia;
+    vi.useFakeTimers();
+    try {
+      (scr.el.querySelector('#roll') as HTMLButtonElement).click();
+      expect((scr.el.querySelector('#roll') as HTMLButtonElement).disabled).toBe(true);
+      state.deleteRecipe(state.data.recipes[0].id); // rng=0 なら最初に決まるはずだった料理
+      vi.runAllTimers();
+      const name = scr.el.querySelector('.dish')!.textContent;
+      expect(name).not.toBe('よだれ水餃子');
+      expect(scr.el.querySelector('.result .card-title')!.textContent).toBe(name);
+      expect((scr.el.querySelector('#roll') as HTMLButtonElement).disabled).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+  it('回している最中に料理が全部消えたら、何も決まらずに止まる', () => {
+    const { scr, state } = setup();
+    window.matchMedia = (() => ({ matches: false, addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia;
+    vi.useFakeTimers();
+    try {
+      (scr.el.querySelector('#roll') as HTMLButtonElement).click();
+      for (const r of [...state.data.recipes]) state.deleteRecipe(r.id);
+      vi.runAllTimers();
+      expect(scr.el.querySelector('.result')).toBeNull();
+      expect(scr.el.querySelector('.dish')!.textContent).toBe('？');
+      expect((scr.el.querySelector('#roll') as HTMLButtonElement).disabled).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+  it('3枚から選ぶ途中で料理が消えたら、そのカードだけ除かれる', () => {
+    const { scr, state } = setup();
+    ([...scr.el.querySelectorAll('.chip')].find(c => c.textContent === '3つから選ぶ') as HTMLElement).click();
+    (scr.el.querySelector('#roll') as HTMLButtonElement).click();
+    const names = [...scr.el.querySelectorAll('.choice')].map(c => c.textContent);
+    expect(names).toHaveLength(3);
+    state.deleteRecipe(state.data.recipes.find(r => r.name === names[1])!.id);
+    expect([...scr.el.querySelectorAll('.choice')].map(c => c.textContent)).toEqual([names[0], names[2]]);
+  });
+  it('3つから選ぶで、候補が3つ以下なら直前の料理を除外せず3枚（全部）出す', () => {
+    const { scr, state } = setup();
+    for (const r of state.data.recipes.slice(3)) state.deleteRecipe(r.id);
+    ([...scr.el.querySelectorAll('.chip')].find(c => c.textContent === '3つから選ぶ') as HTMLElement).click();
+    (scr.el.querySelector('#roll') as HTMLButtonElement).click();
+    (scr.el.querySelector('.choice') as HTMLElement).click();
+    expect(scr.el.querySelector('.result')).not.toBeNull();
+    (scr.el.querySelector('#roll') as HTMLButtonElement).click();
+    expect(scr.el.querySelectorAll('.choice')).toHaveLength(3);
+  });
+  it('作った！で記録が増えても、結果カードのプレーヤー枠とボタンは作り直されない', () => {
+    const { scr } = setup();
+    (scr.el.querySelector('#roll') as HTMLButtonElement).click();
+    const buttons = [...scr.el.querySelectorAll('.result button')] as HTMLButtonElement[];
+    buttons.find(b => b.textContent === '動画を見る')!.click();
+    const player = scr.el.querySelector('.result .player') as HTMLElement;
+    player.append(document.createElement('iframe')); // 枠に印を付ける
+    const card = scr.el.querySelector('.result')!;
+    const cookedBtn = buttons.find(b => b.textContent === '作った！')!;
+    cookedBtn.focus();
+    cookedBtn.click();
+    expect(scr.el.querySelector('.result .count')!.textContent).toContain('作った回数 1回');
+    expect(scr.el.querySelector('.result')).toBe(card);
+    expect(scr.el.querySelector('.result .player')).toBe(player);
+    expect(player.querySelector('iframe')).not.toBeNull();
+    expect(cookedBtn.isConnected).toBe(true);
+    expect(document.activeElement).toBe(cookedBtn);
+  });
+  it('ジャンルのチップは作り直されず、押した状態だけ変わる', () => {
+    const { scr } = setup();
+    const chip = [...scr.el.querySelectorAll('.chip')].find(c => c.textContent === '主菜') as HTMLElement;
+    chip.click();
+    expect([...scr.el.querySelectorAll('.chip')].find(c => c.textContent === '主菜')).toBe(chip);
+    expect(chip.getAttribute('aria-pressed')).toBe('true');
+    expect([...scr.el.querySelectorAll('.chip')].find(c => c.textContent === 'すべて')!.getAttribute('aria-pressed')).toBe('false');
   });
 });

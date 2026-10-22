@@ -45,6 +45,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
   let pickThree = false;
   let spinning = false;
   let currentId: string | null = null; // 結果カードに出している料理
+  let choiceIds: string[] = []; // 3枚から選ぶで並べている料理
   let lastCount = state.data.recipes.length;
 
   const dish = el('div', { class: 'dish', 'aria-live': 'polite' }, '？');
@@ -52,15 +53,26 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
   const choices = el('div', { class: 'choices' });
   const resultHost = el('div', { class: 'result-host' });
   const rollBtn = el('button', { class: 'btn btn-yolk btn-big pop pop-press', id: 'roll', type: 'button', onclick: () => roll([]) }, 'きめて！');
-  const catChips = el('div', { class: 'chips', role: 'group', 'aria-label': 'ジャンル' });
-  const modeChips = el('div', { class: 'chips', role: 'group', 'aria-label': 'えらびかた' });
+
+  // チップは1度だけ作り、押した状態だけ更新する（フォーカスを保つため）
+  function makeChip(label: string, onClick: () => void): HTMLElement {
+    return el('button', { class: 'chip', type: 'button', 'aria-pressed': 'false', onclick: onClick }, label);
+  }
+  const catChipList: Array<{ cat: Cat | null; node: HTMLElement }> = [
+    { cat: null, node: makeChip('すべて', () => { cat = null; paintControls(); }) },
+    ...CATS.map(c => ({ cat: c as Cat | null, node: makeChip(c, () => { cat = c; paintControls(); }) })),
+  ];
+  const favChip = makeChip('お気に入りだけ', () => { favOnly = !favOnly; paintControls(); });
+  const threeChip = makeChip('3つから選ぶ', () => { pickThree = !pickThree; paintControls(); });
+  const catChips = el('div', { class: 'chips', role: 'group', 'aria-label': 'ジャンル' }, ...catChipList.map(c => c.node));
+  const modeChips = el('div', { class: 'chips', role: 'group', 'aria-label': 'えらびかた' }, favChip, threeChip);
 
   function candidates(): Recipe[] {
     return state.data.recipes.filter(r => (cat === null || r.cat === cat) && (!favOnly || r.fav));
   }
 
-  function chip(label: string, pressed: boolean, onClick: () => void): HTMLElement {
-    return el('button', { class: 'chip', type: 'button', 'aria-pressed': pressed ? 'true' : 'false', onclick: onClick }, label);
+  function findRecipe(id: string): Recipe | undefined {
+    return state.data.recipes.find(r => r.id === id);
   }
 
   /** ポンの一言と表情（動いていないとき用） */
@@ -85,16 +97,12 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
     mascot.setBelly(bellyLevel(monthCount(state.data.logs, monthOf(state.today()))));
   }
 
+  /** チップの押した状態・ボタンの無効・空の案内を更新する（作り直さない） */
   function paintControls(): void {
     const list = candidates();
-    clear(catChips);
-    catChips.append(chip('すべて', cat === null, () => { cat = null; paintControls(); }));
-    for (const c of CATS) catChips.append(chip(c, cat === c, () => { cat = c; paintControls(); }));
-    clear(modeChips);
-    modeChips.append(
-      chip('お気に入りだけ', favOnly, () => { favOnly = !favOnly; paintControls(); }),
-      chip('3つから選ぶ', pickThree, () => { pickThree = !pickThree; paintControls(); }),
-    );
+    for (const c of catChipList) c.node.setAttribute('aria-pressed', cat === c.cat ? 'true' : 'false');
+    favChip.setAttribute('aria-pressed', favOnly ? 'true' : 'false');
+    threeChip.setAttribute('aria-pressed', pickThree ? 'true' : 'false');
     rollBtn.disabled = spinning || list.length === 0;
     if (list.length === 0) {
       empty.textContent = state.data.recipes.length === 0
@@ -105,61 +113,108 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
     }
   }
 
-  /** 結果カード。animate は出てきた瞬間だけ */
-  function paintResult(recipe: Recipe, animate: boolean): void {
-    const logs = state.data.logs;
-    const n = countOf(logs, recipe.id);
-    const last = lastMade(logs, recipe.id);
+  // 結果カード：1枚だけ作って持ち、中身の文字だけ更新する（プレーヤー枠やフォーカスを保つため）
+  interface ResultView {
+    img: HTMLImageElement;
+    title: HTMLElement;
+    meta: HTMLElement;
+    memo: HTMLElement;
+    count: HTMLElement;
+  }
+  let view: ResultView | null = null;
+
+  function buildResult(id: string): HTMLElement {
     const player = el('div', { class: 'player' });
+    const img = el('img', { src: '', alt: '', loading: 'lazy' });
+    const title = el('h2', { class: 'card-title' });
+    const meta = el('p', { class: 'muted' });
+    const memo = el('p', { class: 'memo' });
+    const count = el('p', { class: 'count' });
     const card = el(
       'article',
-      { class: `card pop result${animate ? ' rise' : ''}` },
-      el('img', { src: recipe.thumb, alt: recipe.name, loading: 'lazy' }),
+      { class: 'card pop result rise' },
+      img,
       el(
         'div',
         { class: 'card-body stack' },
-        el('h2', { class: 'card-title' }, recipe.name),
-        el('p', { class: 'muted' }, `${recipe.channel ? recipe.channel + '　' : ''}${recipe.cat}`),
-        recipe.memo ? el('p', { class: 'memo' }, recipe.memo) : null,
-        el('p', { class: 'count' }, n > 0 && last ? `作った回数 ${n}回（最後：${mdLabel(last)}）` : 'まだ作っていません'),
+        title,
+        meta,
+        memo,
+        count,
         el(
           'div',
           { class: 'row' },
-          el('button', { class: 'btn btn-leaf pop pop-press', type: 'button', onclick: () => cooked(recipe) }, '作った！'),
-          el('button', { class: 'btn pop pop-press', type: 'button', onclick: () => another(recipe) }, '別のにして'),
-          el('button', { class: 'btn pop pop-press', type: 'button', onclick: () => deps.openPlayer(player, recipe.videoId) }, '動画を見る'),
+          el('button', { class: 'btn btn-leaf pop pop-press', type: 'button', onclick: () => cooked(id) }, '作った！'),
+          el('button', { class: 'btn pop pop-press', type: 'button', onclick: () => another(id) }, '別のにして'),
+          el('button', { class: 'btn pop pop-press', type: 'button', onclick: () => watch(id, player) }, '動画を見る'),
         ),
         player,
       ),
     );
+    view = { img, title, meta, memo, count };
+    return card;
+  }
+
+  /** 結果カードの表示を今のデータに合わせる */
+  function fillResult(recipe: Recipe): void {
+    if (!view) return;
+    const logs = state.data.logs;
+    const n = countOf(logs, recipe.id);
+    const last = lastMade(logs, recipe.id);
+    if (view.img.getAttribute('src') !== recipe.thumb) view.img.setAttribute('src', recipe.thumb);
+    view.img.setAttribute('alt', recipe.name);
+    view.title.textContent = recipe.name;
+    view.meta.textContent = `${recipe.channel ? recipe.channel + '　' : ''}${recipe.cat}`;
+    view.memo.textContent = recipe.memo;
+    view.memo.hidden = recipe.memo === '';
+    view.count.textContent = n > 0 && last ? `作った回数 ${n}回（最後：${mdLabel(last)}）` : 'まだ作っていません';
+  }
+
+  /** 結果カードを新しく出す（せり上がる） */
+  function showResult(recipe: Recipe): void {
+    const card = buildResult(recipe.id);
     clear(resultHost);
     resultHost.append(card);
+    fillResult(recipe);
+  }
+
+  function clearResult(): void {
+    view = null;
+    clear(resultHost);
   }
 
   /** 1品に決まった */
   function decide(recipe: Recipe): void {
     currentId = recipe.id;
+    choiceIds = [];
     dish.textContent = recipe.name;
     clear(choices);
-    paintResult(recipe, true);
+    showResult(recipe);
     mascot.setMood('decided');
     mascot.say('これ！');
   }
 
-  function cooked(recipe: Recipe): void {
-    state.markCooked(recipe.id); // 購読で結果カードの回数が新しくなる
+  function cooked(id: string): void {
+    if (!findRecipe(id)) return;
+    state.markCooked(id); // 購読で結果カードの回数が新しくなる
     mascot.setMood('happy');
     mascot.say('おいしくできた？');
     toast('記録しました');
   }
 
-  function another(recipe: Recipe): void {
+  function another(id: string): void {
     if (candidates().length <= 1) return;
-    roll([recipe.id]);
+    roll([id]);
+  }
+
+  function watch(id: string, host: HTMLElement): void {
+    const recipe = findRecipe(id);
+    if (recipe) deps.openPlayer(host, recipe.videoId);
   }
 
   /** 3枚から選ぶ */
   function showChoices(list: Recipe[]): void {
+    choiceIds = list.map(r => r.id);
     clear(choices);
     for (const r of list) {
       choices.append(
@@ -177,30 +232,39 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
 
   function roll(extraExclude: string[]): void {
     if (spinning) return;
-    const list = candidates();
-    if (list.length === 0) return;
+    if (candidates().length === 0) return;
     const exclude = [...extraExclude];
     if (currentId !== null && !exclude.includes(currentId)) exclude.push(currentId);
-    const input = { recipes: list, logs: state.data.logs, today: state.today(), rng, exclude };
+    // 候補は呼ぶたびに取り直す（回している間に料理が増減することがある）
+    const base = () => ({ recipes: candidates(), logs: state.data.logs, today: state.today(), rng, exclude });
 
-    if (pickThree && list.length > 1) {
-      clear(resultHost);
+    if (pickThree && candidates().length > 1) {
+      clearResult();
       currentId = null;
       dish.textContent = '？';
+      const input = base();
+      // 候補が3つ以下なら、除外すると3枚に満たないので除外しない
+      if (input.recipes.length <= 3) input.exclude = [];
       showChoices(pickMany(input, 3));
       return;
     }
 
     clear(choices);
+    choiceIds = [];
     mascot.setMood('thinking');
     mascot.say('えーと…');
     const finish = (): void => {
       spinning = false;
-      const picked = pickOne({ ...input, logs: state.data.logs, today: state.today() });
+      const picked = pickOne(base());
       paintControls();
-      if (picked) decide(picked);
+      if (picked) {
+        decide(picked);
+      } else {
+        dish.textContent = '？';
+        idleMascot();
+      }
     };
-    if (reducedMotion() || list.length === 1) {
+    if (reducedMotion() || candidates().length === 1) {
       finish();
       return;
     }
@@ -213,7 +277,8 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
         finish();
         return;
       }
-      dish.textContent = list[Math.floor(rng() * list.length) % list.length].name;
+      const list = candidates();
+      if (list.length > 0) dish.textContent = list[Math.floor(rng() * list.length) % list.length].name;
       tick++;
       setTimeout(step, wait);
       wait *= SPIN_SLOWDOWN;
@@ -221,23 +286,36 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
     step();
   }
 
-  // データが変わったら描き直す。結果カードは残す（消された料理なら消す）
+  // データが変わったら更新する。結果カードは残す（消された料理なら消す）
   state.subscribe(() => {
     paintControls();
     paintBelly();
     const count = state.data.recipes.length;
     if (count !== lastCount) {
       lastCount = count;
-      if (!spinning) idleMascot();
+      if (!spinning && choiceIds.length === 0) idleMascot();
     }
     if (currentId !== null) {
-      const recipe = state.data.recipes.find(r => r.id === currentId);
+      const recipe = findRecipe(currentId);
       if (recipe) {
-        if (!spinning) paintResult(recipe, false);
+        fillResult(recipe);
       } else {
         currentId = null;
-        clear(resultHost);
-        dish.textContent = '？';
+        clearResult();
+        if (!spinning) dish.textContent = '？';
+      }
+    }
+    // 3枚から選ぶで、消された料理のカードは除く
+    if (choiceIds.length > 0) {
+      const alive = choiceIds.map(findRecipe).filter((r): r is Recipe => r !== undefined);
+      if (alive.length !== choiceIds.length) {
+        if (alive.length > 0) {
+          showChoices(alive);
+        } else {
+          choiceIds = [];
+          clear(choices);
+          idleMascot();
+        }
       }
     }
   });
