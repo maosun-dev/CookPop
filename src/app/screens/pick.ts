@@ -17,11 +17,6 @@ export interface PickDeps {
   now: () => Date;
 }
 
-/** YouTube の動画ページのアドレス（r.url は使わない。core/recipe の watchUrl は外に出ていないのでここに持つ） */
-export function watchUrl(videoId: string): string {
-  return `https://www.youtube.com/watch?v=${videoId}`;
-}
-
 const SPIN_TICKS = 16;
 const SPIN_FIRST_MS = 50;
 const SPIN_SLOWDOWN = 1.15;

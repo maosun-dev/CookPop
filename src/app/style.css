@@ -138,6 +138,15 @@ textarea.input { min-height: 88px; resize: vertical; }
 .memo { white-space: pre-wrap; }
 .count { font-weight: 700; }
 .player:empty { display: none; }
+/* 動画の枠（.pop の付いたほうだけ。カード内の入れ物の .player とは分ける） */
+.player.pop { position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: var(--r-md); background: var(--ink); }
+.player.pop iframe { position: relative; z-index: 1; display: block; width: 100%; height: 100%; border: 0; }
+.player-loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--cream); }
+.player-mount { width: 100%; height: 100%; }
+.player.pop.player-fail { aspect-ratio: auto; display: grid; justify-items: center; gap: 12px; padding: 20px 16px; text-align: center;
+  background: var(--paper); }
+.player-msg { font-weight: 700; }
+.player-open { display: inline-block; margin-top: 8px; }
 .result.rise { animation: result-rise .35s cubic-bezier(.2, .9, .3, 1.2) 1; }
 @keyframes result-rise { from { transform: translateY(32px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 

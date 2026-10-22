@@ -6,13 +6,13 @@ import './style.css';
 import { newId } from './ids';
 import { ICONS } from './icons';
 import { createMascot } from './mascot/pon';
-import { createPickScreen, watchUrl } from './screens/pick';
+import { openPlayer } from './player';
+import { createPickScreen } from './screens/pick';
 import { createPlaceholder } from './screens/placeholder';
 import { createState } from './state';
 import { safeStore } from './storage';
 import { createTabs } from './tabs';
 import { applyTheme } from './theme';
-import { el } from './ui';
 
 const state = createState(safeStore(), () => new Date(), newId);
 applyTheme(state.data.settings.theme);
@@ -22,10 +22,7 @@ const pick = createPickScreen(state, {
   rng: Math.random,
   mascot,
   now: () => new Date(),
-  // 動画の再生はあとの作業で作る。それまでは YouTube を開くリンクだけ出す
-  openPlayer: (host, videoId) => {
-    host.replaceChildren(el('a', { class: 'btn pop pop-press', href: watchUrl(videoId), target: '_blank', rel: 'noopener' }, 'YouTube で開く'));
-  },
+  openPlayer: (host, videoId) => openPlayer(host, videoId),
 });
 
 const tabs = createTabs([
