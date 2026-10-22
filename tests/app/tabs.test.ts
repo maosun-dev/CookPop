@@ -29,4 +29,16 @@ describe('タブ', () => {
       expect(/[\u{1F300}-\u{1FAFF}]/u.test(ICONS[id])).toBe(false);
     }
   });
+  it('きめるの「？」の点は茶碗のふちから離れ、しおりは本の右の縁から離れている', () => {
+    const dot = ICONS.pick.match(/M12 ([\d.]+)v\.01/);
+    const rim = ICONS.pick.match(/M3\.5 ([\d.]+)h17/);
+    expect(dot).not.toBeNull();
+    expect(rim).not.toBeNull();
+    // 線の太さ(2)の半分ずつを引いても、1以上あく
+    expect(Number(rim![1]) - 1 - (Number(dot![1]) + 1)).toBeGreaterThanOrEqual(1);
+    const ribbon = ICONS.book.match(/M([\d.]+) 3\.5v7l2-1\.6 2 1\.6v-7/);
+    expect(ribbon).not.toBeNull();
+    // しおりの右端(+4) と 本の右縁(19) のあいだに、線の太さを除いて1以上あく
+    expect(19 - 1 - (Number(ribbon![1]) + 4 + 1)).toBeGreaterThanOrEqual(1);
+  });
 });

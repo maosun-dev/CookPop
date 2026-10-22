@@ -207,9 +207,9 @@ textarea.input { min-height: 88px; resize: vertical; }
 .day:disabled { cursor: default; }
 .day[data-today="true"] { border-color: var(--line); }
 .day[aria-pressed="true"] { background: var(--ink); color: var(--cream); }
-.day .mark { position: absolute; left: 50%; bottom: 5px; width: 10px; height: 10px; transform: translateX(-50%);
-  border: 2px solid var(--line); border-radius: var(--r-pill); background: var(--yolk); }
-.day[aria-pressed="true"] .mark { border-color: var(--cream); }
+.day .mark { position: absolute; left: 50%; bottom: 1px; width: 14px; height: 14px; transform: translateX(-50%); line-height: 0; }
+.day .mark svg { width: 14px; height: 14px; display: block; }
+.day[data-made="true"] .day-num { transform: translateY(-3px); } /* 印のぶんだけ数字を上げる */
 
 .section-title { font-size: var(--fs-3); font-weight: 900; }
 .daylist { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }

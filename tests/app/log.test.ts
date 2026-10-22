@@ -27,6 +27,12 @@ describe('きろく', () => {
     expect(shown).toEqual([id]);
     expect(scr.el.querySelector('.mascot')!.getAttribute('data-belly')).toBe('1');
   });
+  it('作った日の印は小さなポンの顔', () => {
+    const state = createState(fake(), () => new Date(2026, 9, 23), () => 'x');
+    const scr = createLogScreen(state, { mascot: createMascot(), now: () => new Date(2026, 9, 23), showRecipe: () => {} });
+    state.markCooked(state.data.recipes[0].id);
+    expect(scr.el.querySelector('.day[data-made="true"] .mark svg')).not.toBeNull();
+  });
   it('月を動かせる。並び替えの一覧', () => {
     const state = createState(fake(), () => new Date(2026, 9, 23), () => 'x');
     const scr = createLogScreen(state, { mascot: createMascot(), now: () => new Date(2026, 9, 23), showRecipe: () => {} });

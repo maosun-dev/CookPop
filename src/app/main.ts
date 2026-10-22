@@ -1,7 +1,8 @@
 // 起動の流れ：文字と見た目を読み込み、データを用意し、4つのタブを画面に出す。
-import '@fontsource/zen-maru-gothic/500.css';
-import '@fontsource/zen-maru-gothic/700.css';
-import '@fontsource/zen-maru-gothic/900.css';
+// 日本語のサブセットだけを読み込む（英数字も含まれる）。全部入りだと CSS が重い
+import '@fontsource/zen-maru-gothic/japanese-500.css';
+import '@fontsource/zen-maru-gothic/japanese-700.css';
+import '@fontsource/zen-maru-gothic/japanese-900.css';
 import './style.css';
 import './mascot/pon.css';
 import { watchClipboard } from './clipboardCheck';

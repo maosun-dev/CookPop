@@ -1,5 +1,6 @@
 // きろく：今月のおなか、月ごとのカレンダー、よく作る順／しばらく作ってない順の一覧。
-import { el, clear } from '../ui';
+import { el, clear, svg } from '../ui';
+import { PON_FACE } from '../thumb';
 import { calendarCells, monthLabel, shiftMonth } from '../calendar';
 import { mdLabel } from '../format';
 import { createMascot, type Mascot } from '../mascot/pon';
@@ -119,7 +120,7 @@ export function createLogScreen(state: AppState, deps: LogDeps): { el: HTMLEleme
             onclick: () => select(date),
           },
           el('span', { class: 'day-num' }, String(Number(date.slice(8)))),
-          isMade && el('span', { class: 'mark' }),
+          isMade && el('span', { class: 'mark', 'aria-hidden': 'true' }, svg(PON_FACE)), // 作った日の印は小さなポンの顔
         ),
       );
     }
