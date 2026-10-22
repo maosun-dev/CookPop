@@ -107,4 +107,8 @@ async function boot(): Promise<void> {
   });
 }
 
-void boot();
+// 起動で落ちても白い画面のままにしない
+boot().catch(() => {
+  const app = document.getElementById('app');
+  if (app) app.textContent = '起動できませんでした。アプリを閉じて開き直してください';
+});

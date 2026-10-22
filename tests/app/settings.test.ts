@@ -18,6 +18,7 @@ describe('設定', () => {
     cb.click();
     expect(state.data.settings.clipboardCheck).toBe(false);
     expect(scr.el.textContent).toContain('v0.1.0');
+    expect(scr.el.textContent).toContain('Capacitor（MIT）');
   });
   it('書き出しと読み込み', async () => {
     const state = createState(fake(), () => new Date(2026, 9, 23), () => 'x');

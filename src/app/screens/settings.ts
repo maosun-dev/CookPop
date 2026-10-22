@@ -85,6 +85,7 @@ export function createSettingsScreen(state: AppState, deps: SettingsDeps): { el:
         el('p', { class: 'about-name' }, `クックポップ v${deps.version}`),
         el('p', { class: 'note' }, '動画は YouTube の公式プレーヤーで再生します。再生できない動画は「YouTube で開く」から開いてください。'),
         el('p', { class: 'note' }, '文字：Zen Maru Gothic（SIL Open Font License）'),
+        el('p', { class: 'note' }, '部品：Capacitor（MIT）、capawesome File Picker（MIT）'),
       ),
     ),
   );
