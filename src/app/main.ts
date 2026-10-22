@@ -3,6 +3,7 @@ import '@fontsource/zen-maru-gothic/500.css';
 import '@fontsource/zen-maru-gothic/700.css';
 import '@fontsource/zen-maru-gothic/900.css';
 import './style.css';
+import './mascot/pon.css';
 import { watchClipboard } from './clipboardCheck';
 import { suggestHandler } from './clipboardWire';
 import { webFiles } from './files';

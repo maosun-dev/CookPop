@@ -105,22 +105,6 @@ textarea.input { min-height: 88px; resize: vertical; }
 /* ポン：吹き出しが上、体が下 */
 .mascot { display: grid; justify-items: center; gap: 14px; }
 .mascot svg { width: 140px; height: 140px; overflow: visible; }
-.m-shadow { fill: var(--ink); opacity: .14; }
-.m-body { fill: var(--yolk); stroke: var(--ink); stroke-width: 3; }
-.m-belly { fill: var(--egg-white); stroke: var(--ink); stroke-width: 2; transform-box: fill-box; transform-origin: center; transition: transform .3s; }
-.m-eye { fill: var(--ink); transform-box: fill-box; transform-origin: center; transition: transform .15s; }
-.m-beak { fill: var(--apricot); stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; }
-.m-hat { fill: var(--egg-white); stroke: var(--ink); stroke-width: 3; stroke-linejoin: round; }
-.m-hat-line { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; }
-.mascot[data-belly="0"] .m-belly { transform: scale(.85); }
-.mascot[data-belly="2"] .m-belly { transform: scale(1.08); }
-.mascot[data-belly="3"] .m-belly { transform: scale(1.18); }
-.mascot[data-mood="sleepy"] .m-eye, .mascot[data-mood="happy"] .m-eye { transform: scaleY(.3); }
-.mascot[data-mood="sad"] .m-eye { transform: translateY(2px); }
-.mascot[data-mood="thinking"] svg { animation: pon-wobble .5s ease-in-out infinite alternate; }
-.mascot[data-mood="decided"] svg, .mascot[data-mood="happy"] svg { animation: pon-hop .45s ease-out 1; }
-@keyframes pon-wobble { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
-@keyframes pon-hop { 0% { transform: translateY(0); } 40% { transform: translateY(-14px); } 100% { transform: translateY(0); } }
 
 .bubble { position: relative; max-width: 100%; padding: 10px 16px; border-radius: var(--r-lg); font-weight: 700;
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px; text-align: center; }
