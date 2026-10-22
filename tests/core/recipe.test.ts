@@ -13,8 +13,15 @@ describe('リンクの解析', () => {
     expect(parseVideoId('https://www.youtube-nocookie.com/embed/HzLAMA5ck_8')).toBe('HzLAMA5ck_8');
     expect(parseVideoId('  https://youtu.be/HzLAMA5ck_8  ')).toBe('HzLAMA5ck_8');
   });
+  it('https:// の無いリンクも読める', () => {
+    expect(parseVideoId('youtu.be/HzLAMA5ck_8')).toBe('HzLAMA5ck_8');
+    expect(parseVideoId('www.youtube.com/watch?v=HzLAMA5ck_8')).toBe('HzLAMA5ck_8');
+    expect(parseVideoId('ただの文字')).toBeNull();
+  });
   it('YouTube でない・ID が無い・壊れているときは null', () => {
     expect(parseVideoId('https://example.com/watch?v=HzLAMA5ck_8')).toBeNull();
+    expect(parseVideoId('https://evilyoutube.com/watch?v=HzLAMA5ck_8')).toBeNull();
+    expect(parseVideoId('javascript://youtu.be/HzLAMA5ck_8')).toBeNull();
     expect(parseVideoId('https://www.youtube.com/')).toBeNull();
     expect(parseVideoId('https://www.youtube.com/watch?v=')).toBeNull();
     expect(parseVideoId('ただの文字')).toBeNull();
@@ -46,7 +53,7 @@ describe('料理を作る', () => {
 
 describe('保存から読むときの検証', () => {
   it('正しいものはそのまま', () => {
-    const ok = { id: 'a', videoId: 'HzLAMA5ck_8', url: 'u', name: 'n', cat: '汁物', channel: 'c', thumb: 't', memo: 'm', fav: true, addedAt: '2026-10-23' };
+    const ok = { id: 'a', videoId: 'HzLAMA5ck_8', url: 'https://youtu.be/HzLAMA5ck_8', name: 'n', cat: '汁物', channel: 'c', thumb: 'https://i.ytimg.com/vi/HzLAMA5ck_8/hqdefault.jpg', memo: 'm', fav: true, addedAt: '2026-10-23' };
     expect(sanitizeRecipe(ok)).toEqual(ok);
   });
   it('id・videoId・name が無ければ null', () => {
@@ -55,6 +62,25 @@ describe('保存から読むときの検証', () => {
     expect(sanitizeRecipe({ id: 'a', videoId: 'x', name: '' })).toBeNull();
     expect(sanitizeRecipe(null)).toBeNull();
     expect(sanitizeRecipe('文字')).toBeNull();
+  });
+  it('動画 ID の形がおかしければ捨てる', () => {
+    expect(sanitizeRecipe({ id: 'a', videoId: "'><img>", name: 'n' })).toBeNull();
+    expect(sanitizeRecipe({ id: 'a', videoId: 'abc', name: 'n' })).toBeNull();
+  });
+  it('url が動画と合わなければ watch 形式に、thumb が https でなければ thumbUrl に直す', () => {
+    const watch = 'https://www.youtube.com/watch?v=HzLAMA5ck_8';
+    const base = { id: 'a', videoId: 'HzLAMA5ck_8', name: 'n' };
+    expect(sanitizeRecipe({ ...base, url: 'javascript:alert(1)' })!.url).toBe(watch);
+    expect(sanitizeRecipe({ ...base, url: 'https://youtu.be/m10e2igEArE' })!.url).toBe(watch);
+    expect(sanitizeRecipe({ ...base, thumb: 'http://x' })!.thumb).toBe(thumbUrl('HzLAMA5ck_8'));
+    expect(sanitizeRecipe({ ...base, thumb: 'data:image/png;base64,AAAA' })!.thumb).toBe(thumbUrl('HzLAMA5ck_8'));
+  });
+  it('name は前後の空白を取って 40 文字で切り、空なら捨てる。channel・memo も切る', () => {
+    const base = { id: 'a', videoId: 'HzLAMA5ck_8' };
+    expect(sanitizeRecipe({ ...base, name: '   ' })).toBeNull();
+    expect(sanitizeRecipe({ ...base, name: 'あ'.repeat(50) })!.name).toBe('あ'.repeat(40));
+    expect(sanitizeRecipe({ ...base, name: ' n ', channel: ' c ', memo: ' m ' })).toMatchObject({ name: 'n', channel: 'c', memo: 'm' });
+    expect(sanitizeRecipe({ ...base, name: 'n', channel: 'い'.repeat(50), memo: 'う'.repeat(500) })).toMatchObject({ channel: 'い'.repeat(40), memo: 'う'.repeat(400) });
   });
   it('おかしな項目は既定に直す', () => {
     const r = sanitizeRecipe({ id: 'a', videoId: 'HzLAMA5ck_8', name: 'n', cat: '謎', fav: 'yes', addedAt: '昨日', memo: 3 })!;

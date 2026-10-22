@@ -1,13 +1,11 @@
 // 作った記録。元の配列は変えず、新しい配列を返す。
-import { monthOf } from './date';
+import { monthOf, isDateStr } from './date';
 import type { Recipe } from './recipe';
 
 export interface CookLog {
   date: string; // 'YYYY-MM-DD'
   recipeId: string;
 }
-
-const DATE_SHAPE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** 末尾に1件足した新しい配列を返す */
 export function addLog(logs: CookLog[], recipeId: string, date: string): CookLog[] {
@@ -82,7 +80,7 @@ export function sanitizeLogs(x: unknown): CookLog[] {
   for (const item of x) {
     if (typeof item !== 'object' || item === null) continue;
     const { date, recipeId } = item as Record<string, unknown>;
-    if (typeof date !== 'string' || !DATE_SHAPE.test(date)) continue;
+    if (!isDateStr(date)) continue;
     if (typeof recipeId !== 'string' || recipeId === '') continue;
     result.push({ date, recipeId });
   }

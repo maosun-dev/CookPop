@@ -24,3 +24,8 @@ export function daysBetween(from: string, to: string): number {
 export function monthOf(date: string): string {
   return date.slice(0, 7);
 }
+
+/** 'YYYY-MM-DD' の形の文字列か（実在する日かまでは見ない） */
+export function isDateStr(s: unknown): s is string {
+  return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
+}

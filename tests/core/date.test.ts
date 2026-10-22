@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toDateStr, daysBetween, monthOf } from '../../src/core/date';
+import { toDateStr, daysBetween, monthOf, isDateStr } from '../../src/core/date';
 
 describe('日付', () => {
   it('ローカル時刻の YYYY-MM-DD にする（1桁の月日は 0 を付ける）', () => {
@@ -14,5 +14,12 @@ describe('日付', () => {
   });
   it('月を取り出す', () => {
     expect(monthOf('2026-10-23')).toBe('2026-10');
+  });
+  it('日付の形かどうかを確かめる', () => {
+    expect(isDateStr('2026-10-23')).toBe(true);
+    expect(isDateStr('昨日')).toBe(false);
+    expect(isDateStr('')).toBe(false);
+    expect(isDateStr(3)).toBe(false);
+    expect(isDateStr(null)).toBe(false);
   });
 });

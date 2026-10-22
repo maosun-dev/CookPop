@@ -10,6 +10,10 @@ describe('oEmbed', () => {
       .toEqual({ title: 'よだれ水餃子', channel: 'Koh Kentetsu Kitchen', thumb: 'https://i.ytimg.com/vi/x/hqdefault.jpg' });
     expect(parseOembed({ title: 't' })).toEqual({ title: 't', channel: '', thumb: '' });
   });
+  it('https でないサムネイルは使わない', () => {
+    expect(parseOembed({ title: 't', thumbnail_url: 'javascript:x' })).toEqual({ title: 't', channel: '', thumb: '' });
+    expect(parseOembed({ title: 't', thumbnail_url: 'http://x/a.jpg' })!.thumb).toBe('');
+  });
   it('題が無い・JSON でないときは null', () => {
     expect(parseOembed({ author_name: 'x' })).toBeNull();
     expect(parseOembed({ title: '' })).toBeNull();
@@ -17,8 +21,8 @@ describe('oEmbed', () => {
     expect(parseOembed(null)).toBeNull();
   });
   it('取ってきて読む。失敗と時間切れは null', async () => {
-    const ok = async () => ({ title: 't', author_name: 'c', thumbnail_url: 'u' });
-    expect(await fetchMeta('v', ok)).toEqual({ title: 't', channel: 'c', thumb: 'u' });
+    const ok = async () => ({ title: 't', author_name: 'c', thumbnail_url: 'https://i.ytimg.com/u.jpg' });
+    expect(await fetchMeta('v', ok)).toEqual({ title: 't', channel: 'c', thumb: 'https://i.ytimg.com/u.jpg' });
     expect(await fetchMeta('v', async () => { throw new Error('x'); })).toBeNull();
     expect(await fetchMeta('v', () => new Promise(() => {}), 20)).toBeNull();
   });

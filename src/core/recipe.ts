@@ -1,4 +1,5 @@
 // 料理の形（Recipe）と、YouTube のリンクの解析。
+import { isDateStr } from './date';
 
 export const CATS = ['主菜', '副菜', '汁物', 'ご飯・麺', 'おやつ'] as const;
 export type Cat = typeof CATS[number];
@@ -28,6 +29,7 @@ export interface RecipeInput {
 
 // core の型検査は DOM の型を持たないので、使う分だけ URL の形をここで宣言する（実行時は標準の URL）
 interface ParsedUrl {
+  protocol: string;
   hostname: string;
   pathname: string;
   searchParams: { get(name: string): string | null };
@@ -49,14 +51,17 @@ function isHostOf(host: string, domain: string): boolean {
   return host === domain || host.endsWith('.' + domain);
 }
 
-/** YouTube のリンクから動画 ID を取る。読めなければ null */
+/** YouTube のリンクから動画 ID を取る。https:// が無ければ補って読む。読めなければ null */
 export function parseVideoId(url: string): string | null {
+  const text = url.trim();
   let u: ParsedUrl;
   try {
-    u = new URL(url.trim());
+    u = new URL(text.includes('://') ? text : 'https://' + text);
   } catch {
     return null;
   }
+  // javascript://youtu.be/… のような形を通さない
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
   const host = u.hostname.toLowerCase().replace(/^(www|m)\./, '');
   const parts = u.pathname.split('/').filter(Boolean);
   if (host === 'youtu.be') {
@@ -116,21 +121,23 @@ export function sanitizeRecipe(x: unknown): Recipe | null {
   const o = x as Record<string, unknown>;
   const id = str(o.id);
   const videoId = str(o.videoId);
-  const name = str(o.name);
-  if (!id || !videoId || !name) return null;
+  if (!id || !VIDEO_ID_PATTERN.test(videoId)) return null;
+  const name = clip(str(o.name).trim(), NAME_MAX);
+  if (!name) return null;
+  const url = str(o.url).trim();
+  const thumb = str(o.thumb);
   const cat = (CATS as readonly unknown[]).includes(o.cat) ? (o.cat as Cat) : '主菜';
-  const addedAt = str(o.addedAt);
   return {
     id,
     videoId,
-    url: str(o.url) || watchUrl(videoId),
+    url: parseVideoId(url) === videoId ? url : watchUrl(videoId),
     name,
     cat,
-    channel: str(o.channel),
-    thumb: str(o.thumb) || thumbUrl(videoId),
-    memo: str(o.memo),
+    channel: clip(str(o.channel).trim(), NAME_MAX),
+    thumb: thumb.startsWith('https://') ? thumb : thumbUrl(videoId),
+    memo: clip(str(o.memo).trim(), MEMO_MAX),
     fav: o.fav === true,
-    addedAt: /^\d{4}-\d{2}-\d{2}$/.test(addedAt) ? addedAt : '',
+    addedAt: isDateStr(o.addedAt) ? o.addedAt : '',
   };
 }
 

@@ -16,7 +16,7 @@ export function oembedUrl(videoId: string): string {
   return 'https://www.youtube.com/oembed?url=' + encodeURIComponent('https://www.youtube.com/watch?v=' + videoId) + '&format=json';
 }
 
-/** oEmbed の返事を読む。題が空でない文字列でなければ null。チャンネル・サムネイルは文字列でなければ空文字 */
+/** oEmbed の返事を読む。題が空でない文字列でなければ null。チャンネルは文字列でなければ空文字、サムネイルは https:// で始まる文字列でなければ空文字 */
 export function parseOembed(json: unknown): VideoMeta | null {
   if (typeof json !== 'object' || json === null) return null;
   const o = json as Record<string, unknown>;
@@ -24,7 +24,7 @@ export function parseOembed(json: unknown): VideoMeta | null {
   return {
     title: o.title,
     channel: typeof o.author_name === 'string' ? o.author_name : '',
-    thumb: typeof o.thumbnail_url === 'string' ? o.thumbnail_url : '',
+    thumb: typeof o.thumbnail_url === 'string' && o.thumbnail_url.startsWith('https://') ? o.thumbnail_url : '',
   };
 }
 
