@@ -6,5 +6,6 @@ www/
 *.p8
 
 # 手元の作業用
-.claude/
+.claude/*
+!.claude/launch.json
 .superpowers/
