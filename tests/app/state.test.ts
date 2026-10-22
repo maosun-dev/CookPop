@@ -1,0 +1,74 @@
+import { describe, it, expect } from 'vitest';
+import { createState } from '../../src/app/state';
+import { DATA_KEY, parseData, type KeyValueStore } from '../../src/core/store';
+
+function fakeStore(): KeyValueStore & { m: Map<string, string> } {
+  const m = new Map<string, string>();
+  return { m, getItem: k => m.get(k) ?? null, setItem: (k, v) => void m.set(k, v) };
+}
+let n = 0;
+const mk = () => createState(fakeStore(), () => new Date(2026, 9, 23, 12), () => 'id' + (++n));
+const url = 'https://youtu.be/ZZZZZZZZZZZ';
+
+describe('state', () => {
+  it('最初は8品。登録すると増えて保存され、購読者が呼ばれる', () => {
+    const st = fakeStore();
+    const s = createState(st, () => new Date(2026, 9, 23), () => 'new1');
+    let calls = 0; s.subscribe(() => { calls++; });
+    expect(s.data.recipes).toHaveLength(8);
+    const r = s.addRecipe({ url, name: 'テスト', cat: '主菜' });
+    expect(r.ok && r.recipe.id).toBe('new1');
+    expect(s.data.recipes).toHaveLength(9);
+    expect(calls).toBe(1);
+    expect(parseData(st.m.get(DATA_KEY)!)!.recipes).toHaveLength(9);
+  });
+  it('同じ動画は duplicate、壊れたリンクは invalid', () => {
+    const s = mk();
+    expect(s.addRecipe({ url: 'https://youtu.be/HzLAMA5ck_8', name: 'x', cat: '主菜' })).toEqual({ ok: false, reason: 'duplicate' });
+    expect(s.addRecipe({ url: 'https://example.com', name: 'x', cat: '主菜' })).toEqual({ ok: false, reason: 'invalid' });
+  });
+  it('編集・お気に入り・削除。削除しても記録は残る', () => {
+    const s = mk();
+    const id = s.data.recipes[0].id;
+    expect(s.updateRecipe(id, { name: '  新しい名前 ', memo: 'm' })).toBe(true);
+    expect(s.data.recipes[0].name).toBe('新しい名前');
+    expect(s.updateRecipe(id, { name: '   ' })).toBe(false);
+    expect(s.data.recipes[0].name).toBe('新しい名前');
+    s.toggleFav(id);
+    expect(s.data.recipes[0].fav).toBe(true);
+    s.markCooked(id);
+    expect(s.data.logs).toEqual([{ date: '2026-10-23', recipeId: id }]);
+    s.deleteRecipe(id);
+    expect(s.data.recipes).toHaveLength(7);
+    expect(s.data.logs).toHaveLength(1);
+  });
+  it('today は呼ぶたびに now から作る', () => {
+    let d = new Date(2026, 9, 23, 23, 59);
+    const s = createState(fakeStore(), () => d, () => 'x');
+    expect(s.today()).toBe('2026-10-23');
+    d = new Date(2026, 9, 24, 0, 1);
+    expect(s.today()).toBe('2026-10-24');
+  });
+  it('data は変更のたびに別のオブジェクト', () => {
+    const s = mk();
+    const before = s.data;
+    s.updateSettings({ theme: 'dark' });
+    expect(s.data).not.toBe(before);
+    expect(s.data.settings.theme).toBe('dark');
+    expect(s.data.recipes).toBe(before.recipes);
+  });
+  it('バックアップの往復。壊れたものは false で変わらない', () => {
+    const a = mk(); a.addRecipe({ url, name: 'テスト', cat: '副菜' });
+    const b = mk();
+    expect(b.importBackup(a.exportBackup(), 'replace')).toBe(true);
+    expect(b.data.recipes).toHaveLength(9);
+    expect(b.importBackup('ぐちゃ', 'merge')).toBe(false);
+    expect(b.data.recipes).toHaveLength(9);
+  });
+  it('購読の解除', () => {
+    const s = mk(); let c = 0;
+    const off = s.subscribe(() => { c++; });
+    s.updateSettings({ theme: 'light' }); off(); s.updateSettings({ theme: 'auto' });
+    expect(c).toBe(1);
+  });
+});
