@@ -143,4 +143,40 @@ describe('きめる画面', () => {
     expect(chip.getAttribute('aria-pressed')).toBe('true');
     expect([...scr.el.querySelectorAll('.chip')].find(c => c.textContent === 'すべて')!.getAttribute('aria-pressed')).toBe('false');
   });
+  it('並びは ボタン → チップ列 → 3枚 → 結果カード。結果カードはチップ列より後ろ', () => {
+    const { scr } = setup();
+    (scr.el.querySelector('#roll') as HTMLButtonElement).click();
+    const chips = scr.el.querySelector('.filters')!;
+    const result = scr.el.querySelector('.result')!;
+    const choices = scr.el.querySelector('.choices')!;
+    expect(chips.compareDocumentPosition(result) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(chips.compareDocumentPosition(choices) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(choices.compareDocumentPosition(result) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(scr.el.querySelector('#roll')!.compareDocumentPosition(chips) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+  it('決まったら結果カードが見える所まで動かす', () => {
+    const { scr } = setup();
+    const calls: unknown[] = [];
+    const orig = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (arg?: boolean | ScrollIntoViewOptions) { calls.push(arg); };
+    try {
+      (scr.el.querySelector('#roll') as HTMLButtonElement).click();
+    } finally {
+      Element.prototype.scrollIntoView = orig;
+    }
+    // setup は動きを減らす設定なので auto
+    expect(calls).toEqual([{ block: 'nearest', behavior: 'auto' }]);
+  });
+  it('3枚出したあとで名前を変えて選ぶと、新しい名前で決まる', () => {
+    const { scr, state } = setup();
+    ([...scr.el.querySelectorAll('.chip')].find(c => c.textContent === '3つから選ぶ') as HTMLElement).click();
+    (scr.el.querySelector('#roll') as HTMLButtonElement).click();
+    const target = state.data.recipes.find(r => r.name === scr.el.querySelectorAll('.choice')[1].textContent)!;
+    state.updateRecipe(target.id, { name: '新しい名前' });
+    // カードの文字も新しくなる
+    expect([...scr.el.querySelectorAll('.choice')].map(c => c.textContent)).toContain('新しい名前');
+    ([...scr.el.querySelectorAll('.choice')].find(c => c.textContent === '新しい名前') as HTMLElement).click();
+    expect(scr.el.querySelector('.dish')!.textContent).toBe('新しい名前');
+    expect(scr.el.querySelector('.result .card-title')!.textContent).toBe('新しい名前');
+  });
 });

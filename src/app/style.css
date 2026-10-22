@@ -10,6 +10,7 @@
   --apricot: #FF8A5B;    /* あんず：お気に入り・注意 */
   --leaf: #7FC98F;       /* 若葉：作った！・できた */
   --leaf-deep: #4F9E62;
+  --on-accent: #4A2E1C;  /* 差し色（黄・若葉・あんず）の上に載せる文字。暗い見た目でも同じ */
   --r-sm: 10px; --r-md: 16px; --r-lg: 24px; --r-pill: 999px;
   --fs-1: 13px; --fs-2: 15px; --fs-3: 17px; --fs-4: 22px; --fs-5: 28px; --fs-6: 40px;
   --pop-x: 4px; --pop-y: 4px;
@@ -19,13 +20,13 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --cream: #2A1D14; --paper: #3A2A1E; --ink: #FFF1DC; --ink-soft: #C9B4A3;
-    --yolk: #FFC43D; --yolk-deep: #E8A617; --apricot: #FF8A5B; --leaf: #7FC98F; --leaf-deep: #4F9E62;
+    --yolk: #FFC43D; --yolk-deep: #E8A617; --apricot: #FF8A5B; --leaf: #7FC98F; --leaf-deep: #4F9E62; --on-accent: #4A2E1C;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --cream: #2A1D14; --paper: #3A2A1E; --ink: #FFF1DC; --ink-soft: #C9B4A3;
-  --yolk: #FFC43D; --yolk-deep: #E8A617; --apricot: #FF8A5B; --leaf: #7FC98F; --leaf-deep: #4F9E62;
+  --yolk: #FFC43D; --yolk-deep: #E8A617; --apricot: #FF8A5B; --leaf: #7FC98F; --leaf-deep: #4F9E62; --on-accent: #4A2E1C;
   color-scheme: dark;
 }
 *, *::before, *::after { box-sizing: border-box; }
@@ -40,6 +41,8 @@ body {
 button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--yolk); outline-offset: 2px; }
 h1, h2, h3, p { margin: 0; }
+/* hidden 属性は、display を指定したクラスより必ず勝たせる */
+[hidden] { display: none !important; }
 
 /* ステッカー風：2px の輪郭と、右下の平らな影。押すと沈む */
 .pop {
@@ -52,9 +55,9 @@ h1, h2, h3, p { margin: 0; }
 
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px;
   padding: 8px 18px; border-radius: var(--r-pill); font-weight: 700; font-size: var(--fs-3); }
-.btn-yolk { background: var(--yolk); }
-.btn-leaf { background: var(--leaf); }
-.btn-apricot { background: var(--apricot); }
+.btn-yolk { background: var(--yolk); color: var(--on-accent); }
+.btn-leaf { background: var(--leaf); color: var(--on-accent); }
+.btn-apricot { background: var(--apricot); color: var(--on-accent); }
 .btn-big { min-height: 64px; padding: 12px 36px; font-size: var(--fs-5); font-weight: 900; }
 .btn-quiet { border-color: transparent; box-shadow: none; background: transparent; color: var(--ink-soft); }
 
@@ -83,7 +86,7 @@ textarea.input { min-height: 88px; resize: vertical; }
   font-size: var(--fs-1); font-weight: 700; color: var(--ink-soft); cursor: pointer; }
 .tab svg { width: 26px; height: 26px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tab[aria-selected="true"] { color: var(--ink); }
-.tab[aria-selected="true"] .tab-ico { background: var(--yolk); }
+.tab[aria-selected="true"] .tab-ico { background: var(--yolk); color: var(--on-accent); }
 .tab-ico { width: 44px; height: 30px; display: grid; place-items: center; border-radius: var(--r-pill); }
 
 .toast { position: fixed; left: 50%; bottom: calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
@@ -160,7 +163,7 @@ textarea.input { min-height: 88px; resize: vertical; }
 
 /* 登録・編集フォーム */
 .err { margin: 0; padding: 8px 12px; border: 2px solid var(--line); border-radius: var(--r-sm); background: var(--apricot);
-  color: var(--ink); font-weight: 700; font-size: var(--fs-2); }
+  color: var(--on-accent); font-weight: 700; font-size: var(--fs-2); }
 .err:empty { display: none; }
 .hint { margin: 0; }
 .hint:empty { display: none; }
@@ -192,10 +195,10 @@ textarea.input { min-height: 88px; resize: vertical; }
   border-radius: var(--r-pill); background: var(--paper); color: var(--ink); cursor: pointer; line-height: 1; }
 .icon::after { content: ""; position: absolute; inset: -6px; }
 .fav { position: absolute; top: 6px; right: 6px; width: 34px; height: 34px; font-size: 20px; }
-.fav[aria-pressed="true"] { background: var(--apricot); }
+.fav[aria-pressed="true"] { background: var(--apricot); color: var(--on-accent); }
 
 .detail .card-body > .btn { justify-self: start; }
-.detail .btn[aria-pressed="true"] { background: var(--apricot); }
+.detail .btn[aria-pressed="true"] { background: var(--apricot); color: var(--on-accent); }
 
 /* ===== きろく ===== */
 .log-head { display: flex; align-items: center; gap: 12px; }
@@ -220,13 +223,11 @@ textarea.input { min-height: 88px; resize: vertical; }
 .day[aria-pressed="true"] .mark { border-color: var(--cream); }
 
 .section-title { font-size: var(--fs-3); font-weight: 900; }
-.daybox[hidden] { display: none; }
 .daylist { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
 .daylist-item { width: 100%; min-height: 44px; padding: 8px 16px; text-align: left; font-weight: 700; }
 .daylist-empty, .daylist-gone { padding: 8px 4px; color: var(--ink-soft); font-weight: 700; }
 
 .ranking { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
-.ranking[hidden] { display: none; }
 .rank-item { display: grid; gap: 2px; padding: 8px 14px; border: 2px solid var(--line); border-radius: var(--r-md); background: var(--paper); }
 .rank-name { font-weight: 700; overflow-wrap: anywhere; }
 .rank-meta { font-size: var(--fs-1); font-weight: 700; color: var(--ink-soft); }

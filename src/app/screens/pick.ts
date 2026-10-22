@@ -171,6 +171,8 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
     clear(resultHost);
     resultHost.append(card);
     fillResult(recipe);
+    // 決まったカードが画面の外なら見える所まで動かす（jsdom などには無いことがある）
+    card.scrollIntoView?.({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
   }
 
   function clearResult(): void {
@@ -208,19 +210,25 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
   }
 
   /** 3枚から選ぶ */
-  function showChoices(list: Recipe[]): void {
+  let choiceSignature = ''; // 並べているカードの名前と画像（変わったときだけ描き直す）
+  function renderChoices(list: Recipe[]): void {
     choiceIds = list.map(r => r.id);
+    choiceSignature = JSON.stringify(list.map(r => [r.id, r.name, r.thumb]));
     clear(choices);
     for (const r of list) {
       choices.append(
         el(
           'button',
-          { class: 'choice pop pop-press', type: 'button', onclick: () => decide(r) },
+          // 選ぶ瞬間の最新の料理で決める（名前を変えたあとでも古い名前にならない）
+          { class: 'choice pop pop-press', type: 'button', onclick: () => decide(findRecipe(r.id) ?? r) },
           el('img', { src: r.thumb, alt: '', loading: 'lazy' }),
           el('span', {}, r.name),
         ),
       );
     }
+  }
+  function showChoices(list: Recipe[]): void {
+    renderChoices(list);
     mascot.setMood('thinking');
     mascot.say('どれにする？');
   }
@@ -311,6 +319,9 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
           clear(choices);
           idleMascot();
         }
+      } else if (JSON.stringify(alive.map(r => [r.id, r.name, r.thumb])) !== choiceSignature) {
+        // 名前や画像が変わったときは、カードの文字も合わせる
+        renderChoices(alive);
       }
     }
   });
@@ -325,9 +336,9 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
     el('h1', { class: 'sr-only' }, 'きめる'),
     mascot.el,
     el('div', { class: 'stage' }, dish, rollBtn, empty),
+    el('div', { class: 'stack filters' }, catChips, modeChips),
     choices,
     resultHost,
-    el('div', { class: 'stack filters' }, catChips, modeChips),
   );
   return { el: root };
 }

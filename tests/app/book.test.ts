@@ -57,5 +57,7 @@ describe('献立帳', () => {
     const { scr, state } = setup();
     for (const r of [...state.data.recipes]) state.deleteRecipe(r.id);
     expect(scr.el.textContent).toContain('まだ何もありません');
+    // hidden 属性が付き、画面から消える（style.css の [hidden] が効く）
+    expect((scr.el.querySelector('.chips') as HTMLElement).hidden).toBe(true);
   });
 });
