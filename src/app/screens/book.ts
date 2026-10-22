@@ -12,6 +12,8 @@ export interface BookDeps {
   /** 動画を見るとき。host は詳細の中の枠 */
   openPlayer: (host: HTMLElement, videoId: string) => void;
   confirm: (msg: string) => boolean;
+  /** 鳴っている動画を止める（一覧に戻るときに呼ぶ） */
+  pauseAll?: () => void;
 }
 
 /** 'YYYY-MM-DD' を「M月D日」にする */
@@ -120,6 +122,7 @@ export function createBookScreen(
   }
 
   function showList(scroll = true): void {
+    deps.pauseAll?.();
     view = { kind: 'list' };
     detail = null;
     paintList();

@@ -39,6 +39,17 @@ describe('献立帳', () => {
     expect(scr.el.querySelector('.detail')).toBeNull();
     expect(scr.el.querySelectorAll('.tile')).toHaveLength(7);
   });
+  it('詳細から ← 献立帳 で戻るとき、鳴っている動画を止める', () => {
+    const state = createState(fake(), () => new Date(2026, 9, 23), () => 'new');
+    let paused = 0;
+    const scr = createBookScreen(state, { fetchJson: async () => ({}), openPlayer: () => {}, confirm: () => true, pauseAll: () => { paused++; } });
+    document.body.append(scr.el);
+    const before = paused; // 最初の一覧づくりでも呼ばれてよい
+    (scr.el.querySelector('.tile-open') as HTMLElement).click();
+    expect(paused).toBe(before);
+    btn(scr.el.querySelector('.detail')!, '← 献立帳').click();
+    expect(paused).toBe(before + 1);
+  });
   it('削除で いいえ なら消えない', () => {
     const { scr, state } = setup(false);
     (scr.el.querySelector('.tile-open') as HTMLElement).click();

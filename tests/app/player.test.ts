@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from 'vitest';
-import { openPlayer, loadYouTubeApi, type YTLike } from '../../src/app/player';
+import { openPlayer, pauseAllPlayers, loadYouTubeApi, type YTLike } from '../../src/app/player';
 
 function fakeYT(fail: boolean): YTLike {
   return { Player: class { constructor(_h: HTMLElement, o: { events?: { onReady?: () => void; onError?: (e: { data: number }) => void } }) {
@@ -55,6 +55,36 @@ describe('プレーヤー', () => {
     expect(destroyed).toBe(1);
     await tick();
     expect(host.querySelectorAll('.player')).toHaveLength(1);
+  });
+  it('pauseAllPlayers で開いている全部が止まる。destroy 済みは呼ばれない', async () => {
+    const paused: string[] = [];
+    const yt: YTLike = { Player: class {
+      id: string;
+      constructor(_h: HTMLElement, o: { videoId: string; events?: { onReady?: () => void } }) { this.id = o.videoId; queueMicrotask(() => o.events?.onReady?.()); }
+      destroy() {}
+      pauseVideo() { paused.push(this.id); }
+    } };
+    const hostA = document.createElement('div');
+    const hostB = document.createElement('div');
+    const hostC = document.createElement('div');
+    document.body.append(hostA, hostB, hostC);
+    openPlayer(hostA, 'aaaaaaaaaaa', { loadApi: async () => yt });
+    openPlayer(hostB, 'bbbbbbbbbbb', { loadApi: async () => yt });
+    openPlayer(hostC, 'ccccccccccc', { loadApi: async () => yt });
+    await tick();
+    // C は同じ場所で開き直す＝前の ccc は destroy される
+    openPlayer(hostC, 'ddddddddddd', { loadApi: async () => yt });
+    await tick();
+    pauseAllPlayers();
+    expect(paused.sort()).toEqual(['aaaaaaaaaaa', 'bbbbbbbbbbb', 'ddddddddddd']);
+    // pauseVideo が無い・投げるプレーヤーがいても止まらない
+    const bad: YTLike = { Player: class { constructor() {} destroy() {} pauseVideo() { throw new Error('not ready'); } } };
+    const hostD = document.createElement('div');
+    document.body.append(hostD);
+    openPlayer(hostD, 'eeeeeeeeeee', { loadApi: async () => bad });
+    await tick();
+    expect(() => pauseAllPlayers()).not.toThrow();
+    hostA.remove(); hostB.remove(); hostC.remove(); hostD.remove();
   });
   it('読み込み待ちの途中で開き直しても、古いほうは何も描かない', async () => {
     const host = document.createElement('div');

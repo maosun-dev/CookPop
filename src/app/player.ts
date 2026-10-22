@@ -3,6 +3,12 @@
 import { el, clear } from './ui';
 import { watchUrl } from '../core/recipe';
 
+/** 使う分だけ書いた、プレーヤーの操作 */
+export interface LivePlayer {
+  destroy(): void;
+  pauseVideo?(): void;
+}
+
 /** 使う分だけ書いた YouTube IFrame API の型 */
 export interface YTLike {
   Player: new (
@@ -13,7 +19,7 @@ export interface YTLike {
       playerVars?: Record<string, string | number>;
       events?: { onReady?: () => void; onError?: (e: { data: number }) => void };
     },
-  ) => { destroy(): void };
+  ) => LivePlayer;
 }
 
 interface YTWindow {
@@ -72,12 +78,29 @@ export interface PlayerDeps {
 
 interface HostState {
   token: number;
-  player: { destroy(): void } | null;
+  player: LivePlayer | null;
 }
 // host ごとに、今のプレーヤーと「何回目の呼び出しか」を覚えておく
 const hostStates = new WeakMap<HTMLElement, HostState>();
 
-function destroyQuietly(player: { destroy(): void } | null): void {
+// 生きているプレーヤーと、その置き場所（destroy したら外す）。タブを移るときに全部止めるために持つ
+const livePlayers = new Map<LivePlayer, HTMLElement>();
+
+/** 鳴っている動画をすべて止める（タブの切り替えなどで使う）。止められないものは黙って飛ばす */
+export function pauseAllPlayers(): void {
+  for (const [p, host] of [...livePlayers]) {
+    try {
+      p.pauseVideo?.();
+    } catch {
+      // すでに消えている・まだ準備中なら何もしない
+    }
+    // 画面から外れた置き場所のプレーヤーは、もう鳴らせないので一覧から外す
+    if (!host.isConnected) livePlayers.delete(p);
+  }
+}
+
+function destroyQuietly(player: LivePlayer | null): void {
+  if (player) livePlayers.delete(player);
   try {
     player?.destroy();
   } catch {
@@ -148,6 +171,7 @@ export function openPlayer(host: HTMLElement, videoId: string, deps: PlayerDeps 
             onError: () => showFallback(),
           },
         });
+        livePlayers.set(state.player, host);
         if (frame.classList.contains('player-fail')) { destroyQuietly(state.player); state.player = null; }
       } catch {
         showFallback();

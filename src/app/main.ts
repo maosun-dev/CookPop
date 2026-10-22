@@ -9,7 +9,7 @@ import { webFiles } from './files';
 import { newId } from './ids';
 import { ICONS } from './icons';
 import { createMascot } from './mascot/pon';
-import { openPlayer } from './player';
+import { openPlayer, pauseAllPlayers } from './player';
 import { createBookScreen } from './screens/book';
 import { createLogScreen } from './screens/log';
 import { createPickScreen } from './screens/pick';
@@ -35,6 +35,7 @@ const book = createBookScreen(state, {
   fetchJson: url => fetch(url).then(r => r.json()),
   openPlayer: (host, videoId) => openPlayer(host, videoId),
   confirm: msg => window.confirm(msg),
+  pauseAll: pauseAllPlayers,
 });
 
 const log = createLogScreen(state, {
@@ -64,6 +65,9 @@ const tabs = createTabs([
 ]);
 
 document.getElementById('app')!.append(tabs.el);
+
+// 別のタブに移ったら、鳴っている動画を止める
+tabs.onChange(() => pauseAllPlayers());
 
 state.subscribe(() => applyTheme(state.data.settings.theme));
 
