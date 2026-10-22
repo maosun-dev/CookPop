@@ -3,6 +3,7 @@ import '@fontsource/zen-maru-gothic/500.css';
 import '@fontsource/zen-maru-gothic/700.css';
 import '@fontsource/zen-maru-gothic/900.css';
 import './style.css';
+import { webFiles } from './files';
 import { newId } from './ids';
 import { ICONS } from './icons';
 import { createMascot } from './mascot/pon';
@@ -10,7 +11,7 @@ import { openPlayer } from './player';
 import { createBookScreen } from './screens/book';
 import { createLogScreen } from './screens/log';
 import { createPickScreen } from './screens/pick';
-import { createPlaceholder } from './screens/placeholder';
+import { createSettingsScreen } from './screens/settings';
 import { createState } from './state';
 import { safeStore } from './storage';
 import { createTabs } from './tabs';
@@ -42,11 +43,21 @@ const log = createLogScreen(state, {
   },
 });
 
+const settings = createSettingsScreen(state, {
+  files: webFiles(),
+  version: __APP_VERSION__,
+  // 計画2ではブラウザの確認ダイアログを2段で使う
+  confirmMode: async () => {
+    if (window.confirm('今のデータをバックアップの内容に置き換えますか？\n（キャンセルすると「足す」を選べます）')) return 'replace';
+    return window.confirm('今のデータにバックアップの料理と記録を足しますか？') ? 'merge' : null;
+  },
+});
+
 const tabs = createTabs([
   { id: 'pick', label: 'きめる', icon: ICONS.pick, view: pick.el },
   { id: 'book', label: '献立帳', icon: ICONS.book, view: book.el },
   { id: 'log', label: 'きろく', icon: ICONS.log, view: log.el },
-  { id: 'settings', label: '設定', icon: ICONS.settings, view: createPlaceholder('設定').el },
+  { id: 'settings', label: '設定', icon: ICONS.settings, view: settings.el },
 ]);
 
 document.getElementById('app')!.append(tabs.el);
