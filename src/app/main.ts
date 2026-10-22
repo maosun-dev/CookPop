@@ -3,6 +3,7 @@ import '@fontsource/zen-maru-gothic/500.css';
 import '@fontsource/zen-maru-gothic/700.css';
 import '@fontsource/zen-maru-gothic/900.css';
 import './style.css';
+import { watchClipboard } from './clipboardCheck';
 import { webFiles } from './files';
 import { newId } from './ids';
 import { ICONS } from './icons';
@@ -63,3 +64,25 @@ const tabs = createTabs([
 document.getElementById('app')!.append(tabs.el);
 
 state.subscribe(() => applyTheme(state.data.settings.theme));
+
+// クリップボードに新しい動画のリンクがあれば、ポンが登録を聞く
+watchClipboard({
+  read: async () => {
+    try {
+      return navigator.clipboard?.readText ? await navigator.clipboard.readText() : '';
+    } catch {
+      return '';
+    }
+  },
+  state,
+  onSuggest: (_videoId, url) => {
+    mascot.say('クリップボードに動画のリンクがあるよ。登録する？', {
+      label: '登録する',
+      onClick: () => {
+        tabs.select('book');
+        book.openForm(url);
+        mascot.hush();
+      },
+    });
+  },
+});
