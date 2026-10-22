@@ -9,3 +9,6 @@ www/
 .claude/*
 !.claude/launch.json
 .superpowers/
+
+# アイコン・起動画面の書き出し先
+art/out/
