@@ -8,6 +8,7 @@ import { ICONS } from './icons';
 import { createMascot } from './mascot/pon';
 import { openPlayer } from './player';
 import { createBookScreen } from './screens/book';
+import { createLogScreen } from './screens/log';
 import { createPickScreen } from './screens/pick';
 import { createPlaceholder } from './screens/placeholder';
 import { createState } from './state';
@@ -32,10 +33,19 @@ const book = createBookScreen(state, {
   confirm: msg => window.confirm(msg),
 });
 
+const log = createLogScreen(state, {
+  mascot,
+  now: () => new Date(),
+  showRecipe: id => {
+    tabs.select('book');
+    book.showRecipe(id);
+  },
+});
+
 const tabs = createTabs([
   { id: 'pick', label: 'きめる', icon: ICONS.pick, view: pick.el },
   { id: 'book', label: '献立帳', icon: ICONS.book, view: book.el },
-  { id: 'log', label: 'きろく', icon: ICONS.log, view: createPlaceholder('きろく').el },
+  { id: 'log', label: 'きろく', icon: ICONS.log, view: log.el },
   { id: 'settings', label: '設定', icon: ICONS.settings, view: createPlaceholder('設定').el },
 ]);
 
