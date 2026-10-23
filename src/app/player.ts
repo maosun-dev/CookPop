@@ -1,124 +1,51 @@
-// 動画プレーヤー：YouTube 公式の埋め込みプレーヤーを使う。
-// 埋め込みが禁止されている動画や、ネットにつながらないときは「YouTube で開く」に切り替える。
+// 動画プレーヤー：アプリの中（capacitor://localhost）では YouTube が埋め込みを断るため、
+// 自分のサイトの動画ページ（maosun-dev.com）を iframe で開き、その中で YouTube を流す。
+// 再生できないときや時間切れのときは「YouTube で開く」に切り替える。
 import { el, clear } from './ui';
 import { watchUrl } from '../core/recipe';
 
-/** 使う分だけ書いた、プレーヤーの操作 */
-export interface LivePlayer {
-  destroy(): void;
-  pauseVideo?(): void;
-}
-
-/** 使う分だけ書いた YouTube IFrame API の型 */
-export interface YTLike {
-  Player: new (
-    host: HTMLElement,
-    opts: {
-      videoId: string;
-      host?: string;
-      playerVars?: Record<string, string | number>;
-      events?: { onReady?: () => void; onError?: (e: { data: number }) => void };
-    },
-  ) => LivePlayer;
-}
-
-interface YTWindow {
-  YT?: Partial<YTLike>;
-  onYouTubeIframeAPIReady?: () => void;
-}
-
-const API_URL = 'https://www.youtube.com/iframe_api';
-
-// 読み込み中・読み込み済みの Promise を1つだけ持つ（失敗したら捨てて、次にやり直せるようにする）
-let apiPromise: Promise<YTLike> | null = null;
-
-/** YouTube の API を読み込む。script は1回だけ足し、2回目以降は同じ Promise を返す */
-export function loadYouTubeApi(doc: Document = document, timeoutMs = 8000): Promise<YTLike> {
-  try {
-    const win = window as unknown as YTWindow;
-    if (win.YT && typeof win.YT.Player === 'function') return Promise.resolve(win.YT as YTLike);
-    if (apiPromise) return apiPromise;
-
-    const p = new Promise<YTLike>((resolve, reject) => {
-      const script = doc.createElement('script');
-      const previous = win.onYouTubeIframeAPIReady;
-      let timer: ReturnType<typeof setTimeout> | undefined;
-      const fail = (message: string): void => {
-        clearTimeout(timer);
-        script.remove();
-        win.onYouTubeIframeAPIReady = previous;
-        reject(new Error(message));
-      };
-      win.onYouTubeIframeAPIReady = () => {
-        previous?.();
-        clearTimeout(timer);
-        if (win.YT && typeof win.YT.Player === 'function') resolve(win.YT as YTLike);
-        else fail('YouTube の API が使えません');
-      };
-      timer = setTimeout(() => fail('YouTube の API の読み込みが時間切れです'), timeoutMs);
-      script.src = API_URL;
-      script.async = true;
-      script.onerror = () => fail('YouTube の API を読み込めませんでした');
-      (doc.head ?? doc.documentElement).append(script);
-    });
-    apiPromise = p;
-    // 失敗したら次の呼び出しでやり直せるように捨てる
-    p.catch(() => { if (apiPromise === p) apiPromise = null; });
-    return p;
-  } catch (e) {
-    return Promise.reject(e instanceof Error ? e : new Error(String(e)));
-  }
-}
+const PLAYER_PAGE = 'https://maosun-dev.com/cookpop/player.html';
+const PLAYER_ORIGIN = 'https://maosun-dev.com';
 
 export interface PlayerDeps {
-  loadApi?: () => Promise<YTLike>;
   /** 外のブラウザで開く（iPhone では差し替える）。無ければふつうのリンクとして開く */
   openExternal?: (url: string) => void;
+  /** 動画ページから「準備できた」が来るまで待つ時間（ミリ秒）。既定 10000 */
+  timeoutMs?: number;
 }
 
 interface HostState {
-  token: number;
-  player: LivePlayer | null;
+  /** 聞き耳とタイマーを外す */
+  cleanup: () => void;
 }
-// host ごとに、今のプレーヤーと「何回目の呼び出しか」を覚えておく
+// host ごとに、今の状態を覚えておく
 const hostStates = new WeakMap<HTMLElement, HostState>();
 
-// 生きているプレーヤーと、その置き場所（destroy したら外す）。タブを移るときに全部止めるために持つ
-const livePlayers = new Map<LivePlayer, HTMLElement>();
+// 生きている iframe と、その置き場所。タブを移るときに全部止めるために持つ
+const liveFrames = new Map<HTMLIFrameElement, HTMLElement>();
 
 /** 鳴っている動画をすべて止める（タブの切り替えなどで使う）。止められないものは黙って飛ばす */
 export function pauseAllPlayers(): void {
-  for (const [p, host] of [...livePlayers]) {
+  for (const [frame, host] of [...liveFrames]) {
     try {
-      p.pauseVideo?.();
+      frame.contentWindow?.postMessage({ source: 'cookpop-app', command: 'pause' }, PLAYER_ORIGIN);
     } catch {
-      // すでに消えている・まだ準備中なら何もしない
+      // すでに消えているなら何もしない
     }
-    // 画面から外れた置き場所のプレーヤーは、もう鳴らせないので一覧から外す
-    if (!host.isConnected) livePlayers.delete(p);
-  }
-}
-
-function destroyQuietly(player: LivePlayer | null): void {
-  if (player) livePlayers.delete(player);
-  try {
-    player?.destroy();
-  } catch {
-    // すでに消えているなら何もしない
+    // 画面から外れた置き場所の iframe は、もう鳴らせないので一覧から外す
+    if (!host.isConnected) liveFrames.delete(frame);
   }
 }
 
 /** host の中に動画の枠を作って再生する。再生できなければ YouTube で開くリンクに切り替える */
 export function openPlayer(host: HTMLElement, videoId: string, deps: PlayerDeps = {}): void {
-  const loadApi = deps.loadApi ?? (() => loadYouTubeApi());
   const url = watchUrl(videoId);
 
-  const prev = hostStates.get(host);
-  destroyQuietly(prev?.player ?? null);
-  const state: HostState = { token: (prev?.token ?? 0) + 1, player: null };
+  // 前の枠の聞き耳とタイマーを外す
+  hostStates.get(host)?.cleanup();
+  const state: HostState = { cleanup: () => {} };
   hostStates.set(host, state);
-  const mine = state.token;
-  const isCurrent = (): boolean => hostStates.get(host) === state && state.token === mine;
+  const isCurrent = (): boolean => hostStates.get(host) === state;
 
   /** リンクを押したとき。外で開く関数があればそちらに任せる */
   const onOpen = (e: Event): void => {
@@ -128,8 +55,13 @@ export function openPlayer(host: HTMLElement, videoId: string, deps: PlayerDeps 
   };
 
   const loading = el('p', { class: 'player-loading muted' }, '読み込み中…');
-  const mount = el('div', { class: 'player-mount' }); // YouTube がこの要素を iframe に置き換える
-  const frame = el('div', { class: 'player pop' }, loading, mount);
+  const iframe = document.createElement('iframe');
+  iframe.src = `${PLAYER_PAGE}?v=${encodeURIComponent(videoId)}`;
+  iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
+  iframe.setAttribute('allowfullscreen', '');
+  iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+  iframe.title = '動画';
+  const frame = el('div', { class: 'player pop' }, loading, iframe);
   const smallLink = el(
     'a',
     { class: 'muted player-open', href: url, target: '_blank', rel: 'noopener', onclick: onOpen },
@@ -137,46 +69,39 @@ export function openPlayer(host: HTMLElement, videoId: string, deps: PlayerDeps 
   );
   clear(host);
   host.append(frame, smallLink);
+  liveFrames.set(iframe, host);
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const onMessage = (e: MessageEvent): void => {
+    if (!isCurrent()) return;
+    if (e.origin !== PLAYER_ORIGIN || e.source !== iframe.contentWindow) return;
+    const data = e.data as { source?: string; event?: string } | null;
+    if (!data || data.source !== 'cookpop-player') return;
+    if (data.event === 'ready') {
+      clearTimeout(timer);
+      loading.remove();
+    } else if (data.event === 'error') {
+      showFallback();
+    }
+  };
+  state.cleanup = () => {
+    clearTimeout(timer);
+    window.removeEventListener('message', onMessage);
+    liveFrames.delete(iframe);
+  };
+  window.addEventListener('message', onMessage);
 
   /** 枠の中身を「再生できません」と大きなボタンに置き換える */
-  const showFallback = (): void => {
+  function showFallback(): void {
     if (!isCurrent()) return;
-    destroyQuietly(state.player);
-    state.player = null;
+    state.cleanup();
     clear(frame);
     frame.classList.add('player-fail');
     frame.append(
       el('p', { class: 'player-msg' }, 'この動画はアプリの中では再生できません'),
       el('a', { class: 'btn pop pop-press', href: url, target: '_blank', rel: 'noopener', onclick: onOpen }, 'YouTube で開く'),
     );
-  };
-
-  let api: Promise<YTLike>;
-  try {
-    api = loadApi();
-  } catch {
-    showFallback();
-    return;
   }
-  api.then(
-    yt => {
-      if (!isCurrent()) return;
-      try {
-        state.player = new yt.Player(mount, {
-          videoId,
-          host: 'https://www.youtube-nocookie.com',
-          playerVars: { playsinline: 1, rel: 0, modestbranding: 1 },
-          events: {
-            onReady: () => { if (isCurrent()) loading.remove(); },
-            onError: () => showFallback(),
-          },
-        });
-        livePlayers.set(state.player, host);
-        if (frame.classList.contains('player-fail')) { destroyQuietly(state.player); state.player = null; }
-      } catch {
-        showFallback();
-      }
-    },
-    () => showFallback(),
-  );
+
+  timer = setTimeout(showFallback, deps.timeoutMs ?? 10000);
 }
