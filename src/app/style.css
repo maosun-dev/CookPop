@@ -30,14 +30,21 @@
   color-scheme: dark;
 }
 *, *::before, *::after { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; }
+html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; }
 body {
   background: var(--cream); color: var(--ink);
   font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Hiragino Sans", system-ui, sans-serif;
   font-weight: 500; font-size: var(--fs-2); line-height: 1.6;
   -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
+  position: fixed; inset: 0;
+  /* 長押しで文字を選んだり、メニューを出したりしない */
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
 }
+/* 入力欄は文字を選べて、貼り付けもできる */
+input, textarea { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
+/* 画像の長押し保存と引きずりも止める */
+img { -webkit-user-drag: none; -webkit-touch-callout: none; }
 button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--yolk); outline-offset: 2px; }
 h1, h2, h3, p { margin: 0; }
@@ -73,7 +80,10 @@ h1, h2, h3, p { margin: 0; }
 textarea.input { min-height: 88px; resize: vertical; }
 
 .screen { display: none; padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(var(--tabbar-h) + 24px + env(safe-area-inset-bottom, 0px)); max-width: 560px; margin: 0 auto; }
-.screen[data-active="true"] { display: block; }
+/* 画面全体は動かさず、いまの画面の中だけスクロールする（中身が短ければ動かない） */
+.app { position: fixed; inset: 0; }
+.screen[data-active="true"] { display: block; position: absolute; inset: 0; overflow-y: auto;
+  -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 .screen-title { font-size: var(--fs-4); font-weight: 900; margin-bottom: 12px; }
 .muted { color: var(--ink-soft); font-size: var(--fs-1); }
 .stack { display: grid; gap: 12px; }

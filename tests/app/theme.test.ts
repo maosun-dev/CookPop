@@ -22,4 +22,17 @@ describe('テーマ', () => {
       expect(block).toContain('color: var(--on-accent)');
     }
   });
+  it('style.css：画面全体は動かず、画面の中だけスクロールし、長押しで文字が選べない（入力欄は除く）', () => {
+    const css = readFileSync('src/app/style.css', 'utf-8');
+    const body = css.match(/(?:^|\n)body\s*\{[^}]*\}/)![0];
+    expect(body).toContain('user-select: none');
+    expect(body).toContain('-webkit-touch-callout: none');
+    expect(body).toContain('position: fixed');
+    const input = css.match(/input,\s*textarea\s*\{[^}]*\}/)![0];
+    expect(input).toContain('user-select: text');
+    const active = css.match(/\.screen\[data-active="true"\]\s*\{[^}]*\}/)![0];
+    expect(active).toContain('overflow-y: auto');
+    expect(active).toContain('position: absolute');
+    expect(css).toMatch(/\.app\s*\{[^}]*position: fixed/);
+  });
 });
