@@ -11,6 +11,7 @@ describe('iPhone の包み', () => {
     expect(c.ios.contentInset).toBe('never');
     expect(c.ios.backgroundColor).toBe('#FFF6E5');
     expect(c.ios.scrollEnabled).toBe(false);
+    expect(c.plugins.CapacitorShareTarget.appGroupId).toBe('group.com.maosundev.cookpop');
   });
   it('Info.plist：表示名・縦向きだけ・暗号化なし', () => {
     const p = readFileSync('ios/App/App/Info.plist', 'utf8');
@@ -39,6 +40,7 @@ describe('iPhone の包み', () => {
     const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
     expect(pkg.dependencies['@capacitor/core']).toBe('8.5.2');
     expect(pkg.dependencies['@capacitor/preferences']).toBe('8.0.1');
+    expect(pkg.dependencies['@capgo/capacitor-share-target']).toBe('8.0.63');
     expect(pkg.devDependencies['@capacitor/cli']).toBe('8.5.2');
   });
 });

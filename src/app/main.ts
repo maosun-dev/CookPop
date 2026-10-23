@@ -8,6 +8,7 @@ import './mascot/pon.css';
 import { Clipboard } from '@capacitor/clipboard';
 import { Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { CapacitorShareTarget } from '@capgo/capacitor-share-target';
 import { FilePicker } from '@capawesome/capacitor-file-picker';
 import { webFiles } from './files';
 import { nativeClipboardRead, nativeFiles, nativeOpenExternal, type FsLike } from './nativeDeps';
@@ -19,10 +20,12 @@ import { createBookScreen } from './screens/book';
 import { createLogScreen } from './screens/log';
 import { createPickScreen } from './screens/pick';
 import { createSettingsScreen } from './screens/settings';
+import { listenShares } from './shareReceive';
 import { createState } from './state';
 import { isNativeApp, mirrorStore, nativePrefs, prepareSaves } from './native';
 import { safeStore } from './storage';
 import { createTabs } from './tabs';
+import { toast } from './toast';
 import { applyTheme } from './theme';
 
 async function boot(): Promise<void> {
@@ -91,6 +94,18 @@ async function boot(): Promise<void> {
 
   // 別のタブに移ったら、鳴っている動画を止める
   tabs.onChange(() => pauseAllPlayers());
+
+  // YouTube の「共有」で届いたリンクで、献立帳の登録画面を開く（起動時・前に出たときに部品が知らせる）
+  if (native) {
+    listenShares(
+      CapacitorShareTarget,
+      url => {
+        tabs.select('book');
+        book.openForm(url);
+      },
+      () => toast('YouTube のリンクが見つかりませんでした'),
+    );
+  }
 
   state.subscribe(() => applyTheme(state.data.settings.theme));
 }

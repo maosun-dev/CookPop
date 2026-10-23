@@ -31,6 +31,7 @@
     "@capacitor/preferences": "8.0.1",
     "@capacitor/share": "8.0.3",
     "@capawesome/capacitor-file-picker": "8.1.1",
+    "@capgo/capacitor-share-target": "8.0.63",
     "@fontsource/zen-maru-gothic": "^5.2.6"
   }
 }

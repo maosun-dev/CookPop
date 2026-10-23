@@ -2,5 +2,6 @@
   "appId": "com.maosundev.cookpop",
   "appName": "クックポップ",
   "webDir": "dist",
-  "ios": { "contentInset": "never", "backgroundColor": "#FFF6E5", "scrollEnabled": false }
+  "ios": { "contentInset": "never", "backgroundColor": "#FFF6E5", "scrollEnabled": false },
+  "plugins": { "CapacitorShareTarget": { "appGroupId": "group.com.maosundev.cookpop" } }
 }
