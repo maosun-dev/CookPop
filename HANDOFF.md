@@ -12,6 +12,8 @@
 2. `npm run sync`（型の検査 → 画面の組み立て → フォントの余り削り → ios に入れる）
 3. 変更をコミットして push
 4. GitHub の Actions「iPhone版をTestFlightへ」→「Run workflow」で組み立てて TestFlight へ
+   - 組み立ての前に、ワークフローが台本 `tools/ios/add-share-extension.rb`（xcodeproj）で共有の受け口（Share Extension、ターゲット `ShareExtension`・背番号 `com.maosundev.cookpop.share`）を Xcode のプロジェクトに足す。手元の `project.pbxproj` には受け口が入っていないのが正しい（すでにあれば台本は何もしない）
+   - 受け口とアプリは App Group `group.com.maosundev.cookpop` でつながる。受け口の中身は `ios/App/ShareExtension/`、権利は `ios/App/App/App.entitlements` と `ios/App/ShareExtension/ShareExtension.entitlements`
 5. 進み具合は文字で読む：`gh run list` ／ `gh run watch` ／ 失敗したら `gh run view --log-failed`
 6. TestFlight で入れたら `docs/testflight-checklist.md` の表で実機を確かめる
 

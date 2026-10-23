@@ -36,6 +36,45 @@ describe('iPhone の包み', () => {
     expect(w).not.toContain('pull_request_target');
     for (const s of ['APPLE_TEAM_ID', 'APPSTORE_API_KEY_ID', 'APPSTORE_API_ISSUER_ID', 'APPSTORE_API_PRIVATE_KEY']) expect(w).toContain(s);
   });
+  it('共有の受け口：Info.plist の NSExtension', () => {
+    const p = readFileSync('ios/App/ShareExtension/Info.plist', 'utf8');
+    expect(p).toMatch(/<key>NSExtensionPointIdentifier<\/key>\s*<string>com\.apple\.share-services<\/string>/);
+    expect(p).toMatch(/<key>NSExtensionPrincipalClass<\/key>\s*<string>\$\(PRODUCT_MODULE_NAME\)\.ShareViewController<\/string>/);
+    expect(p).toMatch(/<key>NSExtensionActivationSupportsWebURLWithMaxCount<\/key>\s*<integer>1<\/integer>/);
+    expect(p).toMatch(/<key>NSExtensionActivationSupportsText<\/key>\s*<true\/>/);
+    expect(p).toMatch(/<key>CFBundleDisplayName<\/key>\s*<string>クックポップ<\/string>/);
+    expect(p).toMatch(/<key>CFBundlePackageType<\/key>\s*<string>XPC!<\/string>/);
+  });
+  it('共有の受け口：権利（entitlements）2つに App Group', () => {
+    for (const f of ['ios/App/App/App.entitlements', 'ios/App/ShareExtension/ShareExtension.entitlements']) {
+      const e = readFileSync(f, 'utf8');
+      expect(e).toMatch(/<key>com\.apple\.security\.application-groups<\/key>\s*<array>\s*<string>group\.com\.maosundev\.cookpop<\/string>\s*<\/array>/);
+    }
+  });
+  it('共有の受け口：Swift が App Group の share-target-data に書く', () => {
+    const s = readFileSync('ios/App/ShareExtension/ShareViewController.swift', 'utf8');
+    expect(s).toContain('"group.com.maosundev.cookpop"');
+    expect(s).toContain('"share-target-data"');
+    expect(s).toContain('completeRequest');
+  });
+  it('台本：背番号・ShareExtension・すでにあれば抜ける・埋め込み', () => {
+    const r = readFileSync('tools/ios/add-share-extension.rb', 'utf8');
+    expect(r).toContain('com.maosundev.cookpop.share');
+    expect(r).toContain("'ShareExtension'");
+    expect(r).toMatch(/targets\.find/);
+    expect(r).toMatch(/exit/);
+    expect(r).toMatch(/dst_subfolder_spec\s*=\s*'13'/);
+    expect(r).toContain('App/App.entitlements');
+    expect(r).toContain('project.save');
+  });
+  it('ワークフロー：台本を流し、権利付きで仮の署名を2回する', () => {
+    const w = readFileSync('.github/workflows/ios-testflight.yml', 'utf8');
+    expect(w).toContain('ruby tools/ios/add-share-extension.rb');
+    expect((w.match(/--entitlements/g) || []).length).toBe(2);
+    expect(w).toContain('PlugIns/ShareExtension.appex');
+    expect(w.indexOf('add-share-extension.rb')).toBeLessThan(w.indexOf('xcodebuild archive'));
+    expect(w).not.toContain('pull_request_target');
+  });
   it('package.json：Capacitor の部品が固定の版で入っている', () => {
     const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
     expect(pkg.dependencies['@capacitor/core']).toBe('8.5.2');

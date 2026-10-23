@@ -54,6 +54,12 @@ jobs:
           printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/keys/AuthKey_$KEY_ID.p8"
           echo "KEY_PATH=$RUNNER_TEMP/keys/AuthKey_$KEY_ID.p8" >> "$GITHUB_ENV"
 
+      # Mac が無いので、共有の受け口（Share Extension）は組み立ての直前に台本で Xcode のプロジェクトに足す
+      - name: 共有の受け口を足す
+        run: |
+          gem install xcodeproj --no-document
+          ruby tools/ios/add-share-extension.rb
+
       # ここでは署名しない（署名すると開発用の証明書が要り、それには iPhone の登録が要る）。
       # 配布用の署名は次の「TestFlight に送る」で付ける。
       - name: アプリを組み立てる（archive）
@@ -72,7 +78,12 @@ jobs:
             find "$RUNNER_TEMP/App.xcarchive/Products/Applications/App.app/Frameworks" -maxdepth 1 -name '*.framework' \
               -exec codesign --force --sign - --timestamp=none {} \;
           fi
+          # 受け口とアプリには App Group の権利を付けておく（送るときの署名がこれを引き継ぐ）
           codesign --force --sign - --timestamp=none \
+            --entitlements ios/App/ShareExtension/ShareExtension.entitlements \
+            "$RUNNER_TEMP/App.xcarchive/Products/Applications/App.app/PlugIns/ShareExtension.appex"
+          codesign --force --sign - --timestamp=none \
+            --entitlements ios/App/App/App.entitlements \
             "$RUNNER_TEMP/App.xcarchive/Products/Applications/App.app"
 
       - name: TestFlight に送る
