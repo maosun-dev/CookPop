@@ -1,4 +1,4 @@
-// 設定：見た目、クリップボード、バックアップ、このアプリについて。
+// 設定：見た目、バックアップ、このアプリについて。
 import { el } from '../ui';
 import { toast } from '../toast';
 import type { FileDeps } from '../files';
@@ -23,10 +23,6 @@ export function createSettingsScreen(state: AppState, deps: SettingsDeps): { el:
     theme,
     node: el('button', { class: 'chip', type: 'button', 'aria-pressed': 'false', onclick: () => state.updateSettings({ theme }) }, text),
   }));
-
-  // ===== クリップボード =====
-  const check = el('input', { type: 'checkbox', class: 'check', onclick: () => state.updateSettings({ clipboardCheck: check.checked }) });
-  const checkRow = el('label', { class: 'setting-row pop' }, check, el('span', {}, 'クリップボードの YouTube リンクを見つけたら聞く'));
 
   // ===== バックアップ =====
   async function exportBackup(): Promise<void> {
@@ -65,7 +61,6 @@ export function createSettingsScreen(state: AppState, deps: SettingsDeps): { el:
         el('h2', { class: 'section-title' }, '見た目'),
         el('div', { class: 'chips', role: 'group', 'aria-label': '見た目' }, ...chips.map(c => c.node)),
       ),
-      el('div', { class: 'stack' }, el('h2', { class: 'section-title' }, 'クリップボード'), checkRow),
       el(
         'div',
         { class: 'stack' },
@@ -93,7 +88,6 @@ export function createSettingsScreen(state: AppState, deps: SettingsDeps): { el:
   function render(): void {
     const s = state.data.settings;
     for (const c of chips) c.node.setAttribute('aria-pressed', String(s.theme === c.theme));
-    check.checked = s.clipboardCheck;
   }
   state.subscribe(render);
   render();

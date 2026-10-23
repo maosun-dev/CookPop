@@ -9,8 +9,6 @@ import { Clipboard } from '@capacitor/clipboard';
 import { Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { FilePicker } from '@capawesome/capacitor-file-picker';
-import { watchClipboard } from './clipboardCheck';
-import { suggestHandler } from './clipboardWire';
 import { webFiles } from './files';
 import { nativeClipboardRead, nativeFiles, nativeOpenExternal, type FsLike } from './nativeDeps';
 import { newId } from './ids';
@@ -26,7 +24,6 @@ import { isNativeApp, mirrorStore, nativePrefs, prepareSaves } from './native';
 import { safeStore } from './storage';
 import { createTabs } from './tabs';
 import { applyTheme } from './theme';
-import { toast } from './toast';
 
 async function boot(): Promise<void> {
   // 先に消えにくい保存から戻す（失敗しても起動は続ける）。戻し終わってから画面を描く
@@ -58,6 +55,10 @@ async function boot(): Promise<void> {
     openPlayer: openVideo,
     confirm: msg => window.confirm(msg),
     pauseAll: pauseAllPlayers,
+    // 押されたときだけ読む（勝手に読むと iPhone が毎回「ペーストを許可」と聞くため）
+    readClipboard: native
+      ? nativeClipboardRead(Clipboard)
+      : navigator.clipboard?.readText ? () => navigator.clipboard.readText() : undefined,
   });
 
   const log = createLogScreen(state, {
@@ -92,19 +93,6 @@ async function boot(): Promise<void> {
   tabs.onChange(() => pauseAllPlayers());
 
   state.subscribe(() => applyTheme(state.data.settings.theme));
-
-  // クリップボードに新しい動画のリンクがあれば、ポンが登録を聞く
-  watchClipboard({
-    read: native ? nativeClipboardRead(Clipboard) : async () => {
-      try {
-        return navigator.clipboard?.readText ? await navigator.clipboard.readText() : '';
-      } catch {
-        return '';
-      }
-    },
-    state,
-    onSuggest: suggestHandler({ mascot, tabs, book, toast }),
-  });
 }
 
 // 起動で落ちても白い画面のままにしない

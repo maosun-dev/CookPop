@@ -9,14 +9,13 @@ const tick = () => new Promise(r => setTimeout(r, 0));
 const btn = (root: Element, text: string) => [...root.querySelectorAll('button')].find(b => b.textContent?.trim() === text) as HTMLButtonElement;
 
 describe('設定', () => {
-  it('見た目とクリップボードの設定が保存される', () => {
+  it('見た目の設定が保存され、クリップボードの設定は無い', () => {
     const state = createState(fake(), () => new Date(2026, 9, 23), () => 'x');
     const scr = createSettingsScreen(state, { files: { saveText: async () => {}, pickText: async () => null }, confirmMode: async () => null, version: '0.1.0' });
     ([...scr.el.querySelectorAll('.chip')].find(c => c.textContent === '暗い') as HTMLElement).click();
     expect(state.data.settings.theme).toBe('dark');
-    const cb = scr.el.querySelector('input[type="checkbox"]') as HTMLInputElement;
-    cb.click();
-    expect(state.data.settings.clipboardCheck).toBe(false);
+    expect(scr.el.querySelector('input[type="checkbox"]')).toBeNull();
+    expect(scr.el.textContent).not.toContain('クリップボード');
     expect(scr.el.textContent).toContain('v0.1.0');
     expect(scr.el.textContent).toContain('Capacitor（MIT）');
   });

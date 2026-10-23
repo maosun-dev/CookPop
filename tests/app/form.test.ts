@@ -7,6 +7,7 @@ import type { KeyValueStore } from '../../src/core/store';
 const fake = (): KeyValueStore => { const m = new Map<string, string>(); return { getItem: k => m.get(k) ?? null, setItem: (k, v) => void m.set(k, v) }; };
 const tick = () => new Promise(r => setTimeout(r, 0));
 const mkState = () => createState(fake(), () => new Date(2026, 9, 23), () => 'new');
+const pasteBtn = (root: HTMLElement) => [...root.querySelectorAll('button')].find(b => b.textContent === 'クリップボードから貼る') as HTMLButtonElement;
 const input = (root: HTMLElement, name: string) => root.querySelector(`[name="${name}"]`) as HTMLInputElement;
 
 describe('登録フォーム', () => {
@@ -80,5 +81,34 @@ describe('登録フォーム', () => {
     input(f.el, 'name').value = 'x';
     (f.el.querySelector('form') as HTMLFormElement).requestSubmit();
     expect(f.el.querySelector('.err')!.textContent).toContain('動画リンクを貼ってください');
+  });
+
+  it('「クリップボードから貼る」で欄に入り、自動入力が走る', async () => {
+    const state = mkState(); let reads = 0;
+    const f = createForm(state, {
+      fetchJson: async () => ({ title: '貼った動画', author_name: 'だれか', thumbnail_url: 'https://i.ytimg.com/vi/ZZZZZZZZZZZ/hqdefault.jpg' }),
+      onDone: () => {}, readClipboard: async () => { reads++; return '  https://youtu.be/ZZZZZZZZZZZ \n'; },
+    });
+    expect(reads).toBe(0);
+    pasteBtn(f.el).click();
+    await tick();
+    expect(reads).toBe(1);
+    expect(input(f.el, 'url').value).toBe('https://youtu.be/ZZZZZZZZZZZ');
+    expect(input(f.el, 'name').value).toBe('貼った動画');
+  });
+  it('クリップボードが空・失敗なら欄は空のまま、案内が出る', async () => {
+    for (const read of [async () => '  ', async () => { throw new Error('denied'); }]) {
+      const f = createForm(mkState(), { fetchJson: async () => ({}), onDone: () => {}, readClipboard: read });
+      pasteBtn(f.el).click();
+      await tick();
+      expect(input(f.el, 'url').value).toBe('');
+      expect(document.querySelector('.toast')!.textContent).toBe('クリップボードに YouTube のリンクがありません');
+    }
+  });
+  it('readClipboard が無いとき、編集のときは貼るボタンが無い', () => {
+    const state = mkState();
+    expect(pasteBtn(createForm(state, { fetchJson: async () => ({}), onDone: () => {} }).el)).toBeUndefined();
+    const edit = createForm(state, { fetchJson: async () => ({}), onDone: () => {}, readClipboard: async () => 'x', prefill: { recipeId: state.data.recipes[0].id } });
+    expect(pasteBtn(edit.el)).toBeUndefined();
   });
 });

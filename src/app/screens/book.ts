@@ -16,6 +16,8 @@ export interface BookDeps {
   confirm: (msg: string) => boolean;
   /** 鳴っている動画を止める（一覧に戻るときに呼ぶ） */
   pauseAll?: () => void;
+  /** クリップボードの文字を読む。登録フォームの「クリップボードから貼る」で使う */
+  readClipboard?: () => Promise<string>;
 }
 
 /** 'YYYY-MM-DD' を「M月D日」にする */
@@ -230,7 +232,7 @@ export function createBookScreen(
   function showForm(onDone: () => void, prefill?: { url?: string; recipeId?: string }): void {
     view = { kind: 'form' };
     detail = null;
-    const form = createForm(state, { fetchJson: deps.fetchJson, onDone, prefill });
+    const form = createForm(state, { fetchJson: deps.fetchJson, onDone, prefill, readClipboard: deps.readClipboard });
     mount(
       el(
         'div',

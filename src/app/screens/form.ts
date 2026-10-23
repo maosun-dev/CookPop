@@ -10,6 +10,8 @@ export interface FormDeps {
   onDone: () => void;
   /** url：開いた時点で貼っておくリンク／recipeId：編集する料理 */
   prefill?: { url?: string; recipeId?: string };
+  /** クリップボードの文字を読む（ボタンを押したときだけ呼ぶ）。無ければ貼るボタンを出さない */
+  readClipboard?: () => Promise<string>;
 }
 
 export function createForm(state: AppState, deps: FormDeps): { el: HTMLElement; setUrl(url: string): void } {
@@ -152,8 +154,27 @@ export function createForm(state: AppState, deps: FormDeps): { el: HTMLElement; 
     }
   }
 
+  /** 「クリップボードから貼る」：押したときだけ読む。空や失敗は案内だけ出す */
+  async function pasteFromClipboard(): Promise<void> {
+    let text = '';
+    try {
+      text = ((await deps.readClipboard?.()) ?? '').trim();
+    } catch {
+      text = '';
+    }
+    if (!text) {
+      toast('クリップボードに YouTube のリンクがありません');
+      return;
+    }
+    setUrl(text);
+  }
+  const pasteBtn = !editing && deps.readClipboard
+    ? el('button', { class: 'btn pop pop-press', type: 'button', onclick: () => void pasteFromClipboard() }, 'クリップボードから貼る')
+    : null;
+
   const form = el('form', { class: 'stack', novalidate: true, onsubmit: submit },
     urlInput && field('YouTube のリンク', urlInput),
+    pasteBtn,
     errLine,
     hint,
     field('料理の名前', nameInput),
