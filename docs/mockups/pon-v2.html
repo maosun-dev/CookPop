@@ -71,11 +71,27 @@ function zzz(mood, x, y) {
   return mood === 'sleepy' ? `<text x="${x}" y="${y}" font-size="22" font-weight="900" fill="#8A6A55" font-family="sans-serif">z</text><text x="${x + 13}" y="${y - 12}" font-size="15" font-weight="900" fill="#8A6A55" font-family="sans-serif">z</text>` : '';
 }
 function sweat(mood, x, y) {
-  return mood === 'thinking' ? `<circle cx="${x}" cy="${y + 8}" r="3.2" fill="#8A6A55"/><circle cx="${x + 10}" cy="${y + 3}" r="3.6" fill="#8A6A55"/><circle cx="${x + 21}" cy="${y - 3}" r="4" fill="#8A6A55"/>` : '';
+  // 考え中：頭の横に「？」入りの考えごとの吹き出し
+  if (mood !== 'thinking') return '';
+  return `<circle cx="${x - 4}" cy="${y + 18}" r="3" fill="#FFFFFF" stroke="#D9C4A2" stroke-width="2"/>` +
+    `<circle cx="${x + 5}" cy="${y + 8}" r="5" fill="#FFFFFF" stroke="#D9C4A2" stroke-width="2"/>` +
+    `<path d="M${x + 6} ${y - 10} c-2 -12 14 -18 20 -9 c5 -9 22 -6 21 6 c10 2 9 17 -2 18 c-3 9 -18 9 -21 2 c-10 4 -22 -6 -18 -17 z" fill="#FFFFFF" stroke="#D9C4A2" stroke-width="2.2" stroke-linejoin="round"/>` +
+    `<text x="${x + 26}" y="${y + 2}" text-anchor="middle" font-size="19" font-weight="900" fill="#8A6A55" font-family="Zen Maru Gothic, sans-serif">?</text>`;
+}
+// 考え中：羽をあごに当てる（色は案ごと）
+function chinWing(mood, x, y, color) {
+  if (mood !== 'thinking') return '';
+  return `<path d="M${x} ${y} c-10 -4 -18 4 -14 12 c4 6 14 6 18 -2 c2 -4 0 -8 -4 -10 z" fill="${color}"/>`;
+}
+// 考え中は体ごと少し首をかしげる
+function tilt(svg, mood) {
+  if (mood !== 'thinking') return svg;
+  return svg.replace(/(<svg[^>]*>)/, '$1<g transform="rotate(-7 100 184)">').replace('</svg>', '</g>' + sweat(mood, 136, 30) + '</svg>');
 }
 
 // ===== 案A：ふわもちひよこ =====
-function ponA(mood) {
+function ponA(mood) { return tilt(ponARaw(mood), mood); }
+function ponARaw(mood) {
   const line = '#B8792A', yolk = '#FFD24A', wing = '#FFC12E', orange = '#FF9A57';
   return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
     <ellipse cx="100" cy="188" rx="46" ry="6" fill="#000" opacity=".08"/>
@@ -94,12 +110,13 @@ function ponA(mood) {
     ${cheeks([60, 126], [140, 126], 11, 6.5, mood)}
     ${eyes('big', mood, [78, 106], [122, 106], 10)}
     <path d="M92 118 Q100 113 108 118 Q105 127 100 128 Q95 127 92 118 Z" fill="${orange}" stroke="${line}" stroke-width="2.5" stroke-linejoin="round"/>
-    ${zzz(mood, 150, 46)}${sweat(mood, 152, 84)}
+    ${zzz(mood, 150, 46)}
   </svg>`;
 }
 
 // ===== 案B：たまごのからポン =====
-function ponB(mood) {
+function ponB(mood) { return tilt(ponBRaw(mood), mood); }
+function ponBRaw(mood) {
   const line = '#7A5636', yolk = '#FFD24A', orange = '#FF9A57';
   const shellTop = 'M36 120 L48 106 L60 120 L73 104 L86 120 L100 104 L114 120 L127 104 L140 120 L152 106 L164 120';
   return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
@@ -116,12 +133,13 @@ function ponB(mood) {
     <path d="M150 126 L170 66" stroke="${line}" stroke-width="5" stroke-linecap="round"/>
     <ellipse cx="172" cy="60" rx="11" ry="8" transform="rotate(-20 172 60)" fill="#E8B26A" stroke="${line}" stroke-width="3"/>
     <path d="M148 118 C160 116 162 128 152 132 Z" fill="#FFC12E" stroke="${line}" stroke-width="3" stroke-linejoin="round"/>
-    ${zzz(mood, 150, 70)}${sweat(mood, 152, 66)}
+    ${zzz(mood, 150, 70)}
   </svg>`;
 }
 
 // ===== 案C：おもちぬいぐるみ =====
-function ponC(mood) {
+function ponC(mood) { return tilt(ponCRaw(mood), mood); }
+function ponCRaw(mood) {
   const yolk = '#FFD95E', shade = '#F7C743', hat = '#FFFFFF', hatShade = '#EFE4D2', orange = '#FF9A57';
   return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
     <ellipse cx="100" cy="186" rx="58" ry="7" fill="#000" opacity=".08"/>
@@ -137,12 +155,14 @@ function ponC(mood) {
     ${cheeks([58, 136], [142, 136], 12, 7, mood)}
     ${eyes('dot', mood, [72, 124], [128, 124], 10)}
     <path d="M94 134 Q100 130 106 134 Q103 141 100 142 Q97 141 94 134 Z" fill="${orange}"/>
-    ${zzz(mood, 156, 74)}${sweat(mood, 160, 100)}
+    ${chinWing(mood, 118, 140, shade)}
+    ${zzz(mood, 156, 74)}
   </svg>`;
 }
 
 // ===== 案D：ころんひよこ（線なし・体と顔が主役） =====
-function ponD(mood) {
+function ponD(mood) { return tilt(ponDRaw(mood), mood); }
+function ponDRaw(mood) {
   const yolk = '#FFD657', shade = '#F6C23E', light = '#FFE9A3', belly = '#FFF4D4', orange = '#FF9A57', hat = '#FFFFFF', hatShade = '#F1E6D4';
   return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
     <ellipse cx="100" cy="188" rx="44" ry="6" fill="#000" opacity=".08"/>
@@ -162,13 +182,43 @@ function ponD(mood) {
     ${cheeks([62, 124], [138, 124], 11, 6.5, mood)}
     ${eyes('dot', mood, [76, 110], [124, 110], 11)}
     <path d="M93 118 Q100 113 107 118 Q104 126 100 127 Q96 126 93 118 Z" fill="${orange}"/>
-    ${zzz(mood, 140, 60)}${sweat(mood, 148, 80)}
+    ${chinWing(mood, 117, 124, shade)}
+    ${zzz(mood, 140, 60)}
+  </svg>`;
+}
+
+// ===== 案E：たまごのからポン（線なし・C の描き方） =====
+function ponE(mood) { return tilt(ponERaw(mood), mood); }
+function ponERaw(mood) {
+  const yolk = '#FFD95E', shade = '#F7C743', light = '#FFE9A3', orange = '#FF9A57', hat = '#FFFFFF', hatShade = '#EFE4D2';
+  const shell = '#FFFBF3', shellShade = '#F2E6D2';
+  const top = 'M34 124 L46 110 L58 124 L71 108 L84 124 L100 108 L116 124 L129 108 L142 124 L154 110 L166 124';
+  return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="100" cy="190" rx="52" ry="6" fill="#000" opacity=".08"/>
+    <circle cx="100" cy="112" r="52" fill="${yolk}"/>
+    <ellipse cx="80" cy="84" rx="15" ry="8" transform="rotate(-24 80 84)" fill="${light}" opacity=".8"/>
+    <path d="M44 74 C30 70 28 46 50 44 C50 22 80 16 90 32 C100 12 132 14 136 34 C156 30 170 54 154 74 Z" fill="${hat}" stroke="#E2CFAF" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M54 68 C72 60 128 60 146 68 L154 74 L44 74 Z" fill="${hatShade}"/>
+    <rect x="44" y="70" width="112" height="15" rx="7.5" fill="${hat}" stroke="#E2CFAF" stroke-width="2.5"/>
+    <rect x="44" y="80" width="112" height="5" rx="2.5" fill="${hatShade}"/>
+    ${cheeks([64, 112], [136, 112], 11, 6.5, mood)}
+    ${eyes('dot', mood, [78, 100], [122, 100], 11)}
+    <path d="M93 108 Q100 103 107 108 Q104 116 100 117 Q96 116 93 108 Z" fill="${orange}"/>
+    ${chinWing(mood, 116, 114, shade)}
+    <path d="${top} C168 164 140 188 100 188 C60 188 32 164 34 124 Z" fill="${shell}"/>
+    <path d="M38 150 C46 174 70 186 100 186 C130 186 154 174 162 150 C160 176 134 188 100 188 C66 188 40 176 38 150 Z" fill="${shellShade}"/>
+    <ellipse cx="68" cy="152" rx="7" ry="4.5" fill="${shellShade}"/><ellipse cx="126" cy="162" rx="9" ry="5.5" fill="${shellShade}"/><ellipse cx="104" cy="140" rx="4.5" ry="3" fill="${shellShade}"/>
+    <path d="M150 134 L168 74" stroke="#D9A45E" stroke-width="6" stroke-linecap="round"/>
+    <ellipse cx="170" cy="66" rx="12" ry="9" transform="rotate(-20 170 66)" fill="#E8B26A"/>
+    <ellipse cx="168" cy="64" rx="6" ry="4" transform="rotate(-20 168 64)" fill="#F3CB8C"/>
+    <path d="M146 124 C160 120 164 134 152 138 C148 136 146 130 146 124 Z" fill="${shade}"/>
   </svg>`;
 }
 
 const PLANS = [
   { fn: ponA, name: '案A ふわもちひよこ', note: '卵の形の体と、頭の毛、斜めにのせた小さなコック帽。輪郭ははちみつ色で柔らかく。' },
   { fn: ponB, name: '案B たまごのからポン', note: '割れた卵の殻から顔を出して、おたまを持っている。料理のアプリだと一目で分かる。' },
+  { fn: ponE, name: '案E たまごのからポン（線なし）', note: '案B を C の描き方に。輪郭線なしで、殻から顔を出し、大きなふわふわ帽子とおたま。' },
   { fn: ponD, name: '案D ころんひよこ', note: '線なしは C と同じ。雫の形の体に、小さく傾けたコック帽。頭の毛と淡いおなかで、体と顔が主役。' },
   { fn: ponC, name: '案C おもちぬいぐるみ', note: '輪郭線なし。おもちのような平たい体に、大きすぎるコック帽。点の目で静かなかわいさ。' },
 ];
