@@ -1,38 +1,43 @@
-// アイコンと起動画面の SVG。ポンの絵は docs/mockups/pon.html の PON から手で写したもの。
+// アイコンと起動画面の SVG。ポンの絵は docs/mockups/pon-c.html の PON から手で写したもの。
 // CSS は使えない（resvg に渡す）ので、色と線は属性で直接書く。
 export const CREAM = '#FFF6E5'; // 地の色（クリーム）
-const YOLK = '#FFC43D'; // 体・羽
-const INK = '#4A2E1C'; // 線・目
-const PAPER = '#FFFDF8'; // おなか・帽子
-const APRICOT = '#FF8A5B'; // くちばし・足・ほっぺ
 
-const LINE = `stroke="${INK}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"`;
-
-/** ポン本体（viewBox 120 の座標のまま。影の楕円は入れない。目は「ふつう」、ほっぺは出す） */
+/** ポン本体（案C。viewBox 200 の座標のまま。影・考え中の吹き出し・zzz・あご・涙・ふつう以外の目は入れない。ほっぺは opacity .55） */
 function ponBody() {
   return `<g class="pon">
-  <ellipse cx="49" cy="105" rx="7" ry="3.5" fill="${APRICOT}" ${LINE}/>
-  <ellipse cx="71" cy="105" rx="7" ry="3.5" fill="${APRICOT}" ${LINE}/>
-  <path d="M30 70 C18 72 16 86 28 90 C32 84 32 76 30 70 Z" fill="${YOLK}" ${LINE}/>
-  <path d="M90 70 C102 72 104 86 92 90 C88 84 88 76 90 70 Z" fill="${YOLK}" ${LINE}/>
-  <circle cx="60" cy="72" r="34" fill="${YOLK}" ${LINE}/>
-  <ellipse cx="60" cy="84" rx="19" ry="14" fill="${PAPER}"/>
-  <circle cx="40" cy="74" r="4.5" fill="${APRICOT}" opacity=".75"/>
-  <circle cx="80" cy="74" r="4.5" fill="${APRICOT}" opacity=".75"/>
-  <circle cx="47" cy="64" r="4.2" fill="${INK}"/><circle cx="73" cy="64" r="4.2" fill="${INK}"/>
-  <circle cx="48.6" cy="62.4" r="1.5" fill="#fff"/><circle cx="74.6" cy="62.4" r="1.5" fill="#fff"/>
-  <path d="M55 70 L65 70 L60 77 Z" fill="${APRICOT}" ${LINE}/>
-  <path d="M44 42 C36 40 36 26 46 26 C46 16 60 14 62 24 C66 14 82 18 78 28 C86 28 86 42 76 42 Z" fill="${PAPER}" ${LINE}/>
-  <rect x="42" y="40" width="36" height="8" rx="3" fill="${PAPER}" ${LINE}/>
+  <g>
+    <ellipse cx="74" cy="180" rx="12" ry="7" fill="#FF9A57"/>
+    <ellipse cx="126" cy="180" rx="12" ry="7" fill="#FF9A57"/>
+    <path d="M100 74 C154 74 176 108 176 138 C176 170 148 184 100 184 C52 184 24 170 24 138 C24 108 46 74 100 74 Z" fill="#FFD95E"/>
+    <path d="M28 150 C40 172 66 180 100 180 C134 180 160 172 172 150 C168 170 144 184 100 184 C56 184 32 170 28 150 Z" fill="#F7C743"/>
+    <ellipse cx="100" cy="164" rx="34" ry="14" fill="#FFE89A"/>
+    <g><ellipse cx="34" cy="138" rx="10" ry="16" transform="rotate(20 34 138)" fill="#F7C743"/></g>
+    <g><ellipse cx="166" cy="138" rx="10" ry="16" transform="rotate(-20 166 138)" fill="#F7C743"/></g>
+    <g>
+      <path d="M40 80 C26 76 22 48 46 46 C46 22 78 14 90 32 C100 10 136 12 140 34 C162 28 178 54 160 80 Z" fill="#FFFFFF" stroke="#E2CFAF" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M50 74 C70 64 130 64 150 74 L160 80 L40 80 Z" fill="#EFE4D2"/>
+      <rect x="40" y="76" width="120" height="16" rx="8" fill="#FFFFFF" stroke="#E2CFAF" stroke-width="2.5"/>
+      <rect x="40" y="86" width="120" height="6" rx="3" fill="#EFE4D2"/>
+    </g>
+    <ellipse cx="58" cy="136" rx="12" ry="7" fill="#FF8C7A" opacity=".55"/>
+    <ellipse cx="142" cy="136" rx="12" ry="7" fill="#FF8C7A" opacity=".55"/>
+    <g>
+      <g>
+        <circle cx="72" cy="124" r="5.2" fill="#3B2614"/><circle cx="70.4" cy="122.2" r="1.7" fill="#fff"/>
+        <circle cx="128" cy="124" r="5.2" fill="#3B2614"/><circle cx="126.4" cy="122.2" r="1.7" fill="#fff"/>
+      </g>
+    </g>
+    <path d="M94 134 Q100 130 106 134 Q103 141 100 142 Q97 141 94 134 Z" fill="#FF9A57"/>
+  </g>
 </g>`;
 }
 
 /** アイコンの SVG（1024×1024）。クリームの無地に、ポンを大きく少し下寄せで置く */
 export function iconSvg() {
-  // viewBox 120 を 860px 四方に（860 / 120 倍）。横は中央、縦は少し下へ
-  const scale = 860 / 120;
-  const x = (1024 - 860) / 2;
-  const y = x + 20;
+  // viewBox 200 を 880px 四方に（880 / 200 倍）。横は中央、縦は少し下へ
+  const scale = 880 / 200;
+  const x = (1024 - 880) / 2;
+  const y = x + 16;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
 <rect width="1024" height="1024" fill="${CREAM}"/>
 <g transform="translate(${x} ${y}) scale(${scale})">

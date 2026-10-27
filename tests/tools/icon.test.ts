@@ -13,6 +13,10 @@ describe('アイコン', () => {
     expect(ground).toContain('height="1024"');
     expect(ground).toContain('fill="#FFF6E5"');
     expect(s).not.toContain('opacity="0"');
+    // 案C：卵黄の体・白い帽子・点の目。体に輪郭線は無い
+    expect(s).toContain('fill="#FFD95E"');
+    expect(s).toContain('stroke="#E2CFAF"');
+    expect(s).not.toContain('#4A2E1C');
     expect(splashSvg()).toContain('width="2732"');
   });
   it('PNG は RGB（色の種類 2）で、大きさが合う', () => {
