@@ -47,8 +47,14 @@ function eyes(kind, mood, L, R, s) {
     `<path d="M${x - 8 * k} ${y + 2 * k} Q${x} ${y - 9 * k} ${x + 8 * k} ${y + 2 * k}" fill="none" stroke="${DARK}" stroke-width="${3.6 * k}" stroke-linecap="round"/>`).join('');
   if (mood === 'sleepy') return [L, R].map(([x, y]) =>
     `<path d="M${x - 8 * k} ${y} Q${x} ${y + 6 * k} ${x + 8 * k} ${y}" fill="none" stroke="${DARK}" stroke-width="${3.4 * k}" stroke-linecap="round"/>`).join('');
-  if (mood === 'thinking') return [L, R].map(([x, y]) =>
-    `<path d="M${x} ${y} m${-1.5 * k} ${-1 * k} a${2 * k} ${2 * k} 0 1 1 ${3 * k} ${2 * k} a${4.5 * k} ${4.5 * k} 0 1 1 ${-7 * k} ${-4 * k} a${7 * k} ${7 * k} 0 1 1 ${11 * k} ${7 * k}" fill="none" stroke="${DARK}" stroke-width="${2.6 * k}" stroke-linecap="round"/>`).join('');
+  if (mood === 'thinking') {
+    // 目を上に向けて「うーん」：黒目を左上に寄せ、白目のかわりに淡い丸を残す
+    if (kind === 'dot') return [L, R].map(([x, y]) =>
+      `<circle cx="${x - 2.4 * k}" cy="${y - 3 * k}" r="${4.6 * k}" fill="${DARK}"/><circle cx="${x - 3.6 * k}" cy="${y - 4.6 * k}" r="${1.5 * k}" fill="#fff"/>`).join('');
+    return [L, R].map(([x, y]) =>
+      `<ellipse cx="${x}" cy="${y}" rx="${8.5 * k}" ry="${10.5 * k}" fill="#fff" opacity=".9"/>` +
+      `<circle cx="${x - 3 * k}" cy="${y - 4 * k}" r="${5.5 * k}" fill="${DARK}"/><circle cx="${x - 4.4 * k}" cy="${y - 5.8 * k}" r="${1.8 * k}" fill="#fff"/>`).join('');
+  }
   // ふつう
   if (kind === 'dot') return [L, R].map(([x, y]) =>
     `<circle cx="${x}" cy="${y}" r="${5.2 * k}" fill="${DARK}"/><circle cx="${x - 1.6 * k}" cy="${y - 1.8 * k}" r="${1.7 * k}" fill="#fff"/>`).join('');
@@ -65,7 +71,7 @@ function zzz(mood, x, y) {
   return mood === 'sleepy' ? `<text x="${x}" y="${y}" font-size="22" font-weight="900" fill="#8A6A55" font-family="sans-serif">z</text><text x="${x + 13}" y="${y - 12}" font-size="15" font-weight="900" fill="#8A6A55" font-family="sans-serif">z</text>` : '';
 }
 function sweat(mood, x, y) {
-  return mood === 'thinking' ? `<path d="M${x} ${y} q5 8 0 11 q-5 -3 0 -11z" fill="#9FD4F0" stroke="#5A9CC2" stroke-width="1.5"/>` : '';
+  return mood === 'thinking' ? `<circle cx="${x}" cy="${y + 8}" r="3.2" fill="#8A6A55"/><circle cx="${x + 10}" cy="${y + 3}" r="3.6" fill="#8A6A55"/><circle cx="${x + 21}" cy="${y - 3}" r="4" fill="#8A6A55"/>` : '';
 }
 
 // ===== 案A：ふわもちひよこ =====
@@ -135,9 +141,35 @@ function ponC(mood) {
   </svg>`;
 }
 
+// ===== 案D：ころんひよこ（線なし・体と顔が主役） =====
+function ponD(mood) {
+  const yolk = '#FFD657', shade = '#F6C23E', light = '#FFE9A3', belly = '#FFF4D4', orange = '#FF9A57', hat = '#FFFFFF', hatShade = '#F1E6D4';
+  return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="100" cy="188" rx="44" ry="6" fill="#000" opacity=".08"/>
+    <ellipse cx="82" cy="181" rx="11" ry="6.5" fill="${orange}"/><ellipse cx="118" cy="181" rx="11" ry="6.5" fill="${orange}"/>
+    <path d="M100 50 C140 50 164 92 164 128 C164 162 136 184 100 184 C64 184 36 162 36 128 C36 92 60 50 100 50 Z" fill="${yolk}"/>
+    <path d="M40 140 C46 166 70 180 100 180 C130 180 154 166 160 140 C160 168 134 184 100 184 C66 184 40 168 40 140 Z" fill="${shade}"/>
+    <ellipse cx="78" cy="74" rx="18" ry="10" transform="rotate(-24 78 74)" fill="${light}" opacity=".8"/>
+    <ellipse cx="100" cy="150" rx="34" ry="25" fill="${belly}"/>
+    <path d="M40 120 C28 124 26 142 40 146 C46 138 46 128 40 120 Z" fill="${shade}"/>
+    <path d="M160 120 C172 124 174 142 160 146 C154 138 154 128 160 120 Z" fill="${shade}"/>
+    <path d="M96 52 C90 38 100 32 103 42 C106 32 118 36 110 50 Z" fill="${yolk}"/>
+    <g transform="rotate(-16 70 52)">
+      <path d="M50 58 C40 56 40 40 52 40 C52 28 70 26 73 37 C79 26 96 31 92 44 C102 45 100 60 90 58 Z" fill="${hat}" stroke="#E2CFAF" stroke-width="2.2" stroke-linejoin="round"/>
+      <rect x="49" y="55" width="44" height="10" rx="5" fill="${hat}" stroke="#E2CFAF" stroke-width="2.2"/>
+      <rect x="49" y="60" width="44" height="5" rx="2.5" fill="${hatShade}"/>
+    </g>
+    ${cheeks([62, 124], [138, 124], 11, 6.5, mood)}
+    ${eyes('dot', mood, [76, 110], [124, 110], 11)}
+    <path d="M93 118 Q100 113 107 118 Q104 126 100 127 Q96 126 93 118 Z" fill="${orange}"/>
+    ${zzz(mood, 140, 60)}${sweat(mood, 148, 80)}
+  </svg>`;
+}
+
 const PLANS = [
   { fn: ponA, name: '案A ふわもちひよこ', note: '卵の形の体と、頭の毛、斜めにのせた小さなコック帽。輪郭ははちみつ色で柔らかく。' },
   { fn: ponB, name: '案B たまごのからポン', note: '割れた卵の殻から顔を出して、おたまを持っている。料理のアプリだと一目で分かる。' },
+  { fn: ponD, name: '案D ころんひよこ', note: '線なしは C と同じ。雫の形の体に、小さく傾けたコック帽。頭の毛と淡いおなかで、体と顔が主役。' },
   { fn: ponC, name: '案C おもちぬいぐるみ', note: '輪郭線なし。おもちのような平たい体に、大きすぎるコック帽。点の目で静かなかわいさ。' },
 ];
 const MOODS = [['normal', 'ふつう'], ['happy', 'うれしい'], ['thinking', '考え中'], ['sleepy', '眠い']];
