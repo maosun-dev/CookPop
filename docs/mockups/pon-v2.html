@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ポンの描き直し案</title>
+<style>
+  :root { --cream:#FFF6E5; --paper:#FFFDF8; --ink:#4A2E1C; --soft:#8A6A55; --night:#2A1D14; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--cream); color:var(--ink);
+    font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",system-ui,sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  .lead { color: var(--soft); margin: 0 0 24px; }
+  section { margin: 0 0 36px; padding: 20px; background: var(--paper); border: 2px solid var(--ink); border-radius: 22px; box-shadow: 5px 5px 0 var(--ink); }
+  h2 { font-size: 21px; margin: 0; }
+  .note { margin: 4px 0 16px; color: var(--soft); font-size: 15px; }
+  .moods { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; }
+  .moods figure { margin: 0; text-align: center; }
+  .moods svg { width: 100%; max-width: 200px; height: auto; display: block; margin: 0 auto; }
+  figcaption { font-size: 13px; color: var(--soft); }
+  .sizes { display: flex; gap: 18px; align-items: end; flex-wrap: wrap; margin-top: 14px; }
+  .chip { display:flex; gap:14px; align-items:end; padding: 12px 16px; border-radius: 16px; }
+  .chip.light { background: var(--cream); }
+  .chip.dark { background: var(--night); }
+  .chip svg.s140 { width: 140px; height: 140px; }
+  .chip svg.s72 { width: 72px; height: 72px; }
+  .chip svg.s40 { width: 40px; height: 40px; }
+  .icon { width: 72px; height: 72px; border-radius: 16px; overflow: hidden; }
+  .icon svg { width: 100%; height: 100%; display: block; }
+  @media (max-width: 640px) { .moods { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+</style>
+</head>
+<body>
+<main>
+  <h1>ポンの描き直し案</h1>
+  <p class="lead">3つの方向です。気に入った案と、直してほしいところを教えてください。</p>
+  <div id="list"></div>
+</main>
+<script>
+// ===== 共通の顔のパーツ =====
+const DARK = '#3B2614';
+function eyes(kind, mood, L, R, s) {
+  // L/R は目の中心、s は大きさ
+  const k = s / 10;
+  if (mood === 'happy') return [L, R].map(([x, y]) =>
+    `<path d="M${x - 8 * k} ${y + 2 * k} Q${x} ${y - 9 * k} ${x + 8 * k} ${y + 2 * k}" fill="none" stroke="${DARK}" stroke-width="${3.6 * k}" stroke-linecap="round"/>`).join('');
+  if (mood === 'sleepy') return [L, R].map(([x, y]) =>
+    `<path d="M${x - 8 * k} ${y} Q${x} ${y + 6 * k} ${x + 8 * k} ${y}" fill="none" stroke="${DARK}" stroke-width="${3.4 * k}" stroke-linecap="round"/>`).join('');
+  if (mood === 'thinking') return [L, R].map(([x, y]) =>
+    `<path d="M${x} ${y} m${-1.5 * k} ${-1 * k} a${2 * k} ${2 * k} 0 1 1 ${3 * k} ${2 * k} a${4.5 * k} ${4.5 * k} 0 1 1 ${-7 * k} ${-4 * k} a${7 * k} ${7 * k} 0 1 1 ${11 * k} ${7 * k}" fill="none" stroke="${DARK}" stroke-width="${2.6 * k}" stroke-linecap="round"/>`).join('');
+  // ふつう
+  if (kind === 'dot') return [L, R].map(([x, y]) =>
+    `<circle cx="${x}" cy="${y}" r="${5.2 * k}" fill="${DARK}"/><circle cx="${x - 1.6 * k}" cy="${y - 1.8 * k}" r="${1.7 * k}" fill="#fff"/>`).join('');
+  return [L, R].map(([x, y]) =>
+    `<ellipse cx="${x}" cy="${y}" rx="${8.5 * k}" ry="${10.5 * k}" fill="${DARK}"/>` +
+    `<circle cx="${x - 2.8 * k}" cy="${y - 4 * k}" r="${3.4 * k}" fill="#fff"/>` +
+    `<circle cx="${x + 3.2 * k}" cy="${y + 4 * k}" r="${1.5 * k}" fill="#fff" opacity=".9"/>`).join('');
+}
+function cheeks(L, R, rx, ry, mood) {
+  const op = mood === 'happy' ? .75 : .5;
+  return [L, R].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="#FF8C7A" opacity="${op}"/>`).join('');
+}
+function zzz(mood, x, y) {
+  return mood === 'sleepy' ? `<text x="${x}" y="${y}" font-size="22" font-weight="900" fill="#8A6A55" font-family="sans-serif">z</text><text x="${x + 13}" y="${y - 12}" font-size="15" font-weight="900" fill="#8A6A55" font-family="sans-serif">z</text>` : '';
+}
+function sweat(mood, x, y) {
+  return mood === 'thinking' ? `<path d="M${x} ${y} q5 8 0 11 q-5 -3 0 -11z" fill="#9FD4F0" stroke="#5A9CC2" stroke-width="1.5"/>` : '';
+}
+
+// ===== 案A：ふわもちひよこ =====
+function ponA(mood) {
+  const line = '#B8792A', yolk = '#FFD24A', wing = '#FFC12E', orange = '#FF9A57';
+  return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="100" cy="188" rx="46" ry="6" fill="#000" opacity=".08"/>
+    <ellipse cx="80" cy="180" rx="13" ry="6.5" fill="${orange}" stroke="${line}" stroke-width="3"/>
+    <ellipse cx="120" cy="180" rx="13" ry="6.5" fill="${orange}" stroke="${line}" stroke-width="3"/>
+    <path d="M100 44 C150 44 170 94 170 124 C170 162 140 182 100 182 C60 182 30 162 30 124 C30 94 50 44 100 44 Z" fill="${yolk}" stroke="${line}" stroke-width="3.5"/>
+    <path d="M100 44 C150 44 170 94 170 124 C170 140 165 152 156 162 C150 120 128 96 100 96 C72 96 50 120 44 162 C35 152 30 140 30 124 C30 94 50 44 100 44 Z" fill="#FFE07A" opacity=".55"/>
+    <ellipse cx="100" cy="146" rx="42" ry="31" fill="#FFF3D2"/>
+    <path d="M34 118 C18 122 16 144 32 150 C40 140 42 128 34 118 Z" fill="${wing}" stroke="${line}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M166 118 C182 122 184 144 168 150 C160 140 158 128 166 118 Z" fill="${wing}" stroke="${line}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M92 46 C86 32 96 24 101 33 C103 22 116 24 109 40" fill="${yolk}" stroke="${line}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <g transform="rotate(14 136 52)">
+      <path d="M118 58 C110 56 110 40 121 40 C121 30 135 28 138 37 C143 28 158 33 154 44 C163 46 161 59 152 58 Z" fill="#FFFFFF" stroke="${line}" stroke-width="3" stroke-linejoin="round"/>
+      <rect x="117" y="55" width="37" height="9" rx="4" fill="#FFFFFF" stroke="${line}" stroke-width="3"/>
+    </g>
+    ${cheeks([60, 126], [140, 126], 11, 6.5, mood)}
+    ${eyes('big', mood, [78, 106], [122, 106], 10)}
+    <path d="M92 118 Q100 113 108 118 Q105 127 100 128 Q95 127 92 118 Z" fill="${orange}" stroke="${line}" stroke-width="2.5" stroke-linejoin="round"/>
+    ${zzz(mood, 150, 46)}${sweat(mood, 152, 84)}
+  </svg>`;
+}
+
+// ===== 案B：たまごのからポン =====
+function ponB(mood) {
+  const line = '#7A5636', yolk = '#FFD24A', orange = '#FF9A57';
+  const shellTop = 'M36 120 L48 106 L60 120 L73 104 L86 120 L100 104 L114 120 L127 104 L140 120 L152 106 L164 120';
+  return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="100" cy="190" rx="50" ry="6" fill="#000" opacity=".08"/>
+    <circle cx="100" cy="104" r="54" fill="${yolk}" stroke="${line}" stroke-width="3.5"/>
+    <path d="M92 52 C86 38 96 30 101 39 C103 28 116 30 109 46" fill="${yolk}" stroke="${line}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M70 44 C58 44 56 26 70 26 C70 12 90 8 96 20 C104 6 128 10 126 24 C142 22 146 44 130 44 Z" fill="#FFFFFF" stroke="${line}" stroke-width="3" stroke-linejoin="round"/>
+    <rect x="68" y="40" width="64" height="12" rx="5" fill="#FFFFFF" stroke="${line}" stroke-width="3"/>
+    ${cheeks([64, 104], [136, 104], 10, 6, mood)}
+    ${eyes('big', mood, [80, 86], [120, 86], 9)}
+    <path d="M93 97 Q100 92 107 97 Q104 105 100 106 Q96 105 93 97 Z" fill="${orange}" stroke="${line}" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="${shellTop} C166 160 138 186 100 186 C62 186 34 160 36 120 Z" fill="#FFFBF2" stroke="${line}" stroke-width="3.5" stroke-linejoin="round"/>
+    <ellipse cx="70" cy="150" rx="6" ry="4" fill="#F1E1C2"/><ellipse cx="128" cy="160" rx="8" ry="5" fill="#F1E1C2"/><ellipse cx="104" cy="140" rx="4" ry="3" fill="#F1E1C2"/>
+    <path d="M150 126 L170 66" stroke="${line}" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="172" cy="60" rx="11" ry="8" transform="rotate(-20 172 60)" fill="#E8B26A" stroke="${line}" stroke-width="3"/>
+    <path d="M148 118 C160 116 162 128 152 132 Z" fill="#FFC12E" stroke="${line}" stroke-width="3" stroke-linejoin="round"/>
+    ${zzz(mood, 150, 70)}${sweat(mood, 152, 66)}
+  </svg>`;
+}
+
+// ===== 案C：おもちぬいぐるみ =====
+function ponC(mood) {
+  const yolk = '#FFD95E', shade = '#F7C743', hat = '#FFFFFF', hatShade = '#EFE4D2', orange = '#FF9A57';
+  return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="100" cy="186" rx="58" ry="7" fill="#000" opacity=".08"/>
+    <ellipse cx="74" cy="180" rx="12" ry="7" fill="${orange}"/><ellipse cx="126" cy="180" rx="12" ry="7" fill="${orange}"/>
+    <path d="M100 74 C154 74 176 108 176 138 C176 170 148 184 100 184 C52 184 24 170 24 138 C24 108 46 74 100 74 Z" fill="${yolk}"/>
+    <path d="M28 150 C40 172 66 180 100 180 C134 180 160 172 172 150 C168 170 144 184 100 184 C56 184 32 170 28 150 Z" fill="${shade}"/>
+    <ellipse cx="34" cy="138" rx="10" ry="16" transform="rotate(20 34 138)" fill="${shade}"/>
+    <ellipse cx="166" cy="138" rx="10" ry="16" transform="rotate(-20 166 138)" fill="${shade}"/>
+    <path d="M40 80 C26 76 22 48 46 46 C46 22 78 14 90 32 C100 10 136 12 140 34 C162 28 178 54 160 80 Z" fill="${hat}" stroke="#E2CFAF" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M50 74 C70 64 130 64 150 74 L160 80 L40 80 Z" fill="${hatShade}"/>
+    <rect x="40" y="76" width="120" height="16" rx="8" fill="${hat}" stroke="#E2CFAF" stroke-width="2.5"/>
+    <rect x="40" y="86" width="120" height="6" rx="3" fill="${hatShade}"/>
+    ${cheeks([58, 136], [142, 136], 12, 7, mood)}
+    ${eyes('dot', mood, [72, 124], [128, 124], 10)}
+    <path d="M94 134 Q100 130 106 134 Q103 141 100 142 Q97 141 94 134 Z" fill="${orange}"/>
+    ${zzz(mood, 156, 74)}${sweat(mood, 160, 100)}
+  </svg>`;
+}
+
+const PLANS = [
+  { fn: ponA, name: '案A ふわもちひよこ', note: '卵の形の体と、頭の毛、斜めにのせた小さなコック帽。輪郭ははちみつ色で柔らかく。' },
+  { fn: ponB, name: '案B たまごのからポン', note: '割れた卵の殻から顔を出して、おたまを持っている。料理のアプリだと一目で分かる。' },
+  { fn: ponC, name: '案C おもちぬいぐるみ', note: '輪郭線なし。おもちのような平たい体に、大きすぎるコック帽。点の目で静かなかわいさ。' },
+];
+const MOODS = [['normal', 'ふつう'], ['happy', 'うれしい'], ['thinking', '考え中'], ['sleepy', '眠い']];
+const list = document.getElementById('list');
+for (const p of PLANS) {
+  const sec = document.createElement('section');
+  sec.innerHTML = `<h2>${p.name}</h2><p class="note">${p.note}</p>
+    <div class="moods">${MOODS.map(([m, label]) => `<figure>${p.fn(m)}<figcaption>${label}</figcaption></figure>`).join('')}</div>
+    <div class="sizes">
+      <div class="chip light">${p.fn('normal').replace('<svg', '<svg class="s140"')}${p.fn('happy').replace('<svg', '<svg class="s72"')}${p.fn('normal').replace('<svg', '<svg class="s40"')}</div>
+      <div class="chip dark">${p.fn('normal').replace('<svg', '<svg class="s140"')}${p.fn('happy').replace('<svg', '<svg class="s72"')}${p.fn('normal').replace('<svg', '<svg class="s40"')}</div>
+      <div class="icon" style="background:#FFF6E5">${p.fn('normal')}</div>
+    </div>`;
+  list.appendChild(sec);
+}
+</script>
+</body>
+</html>
