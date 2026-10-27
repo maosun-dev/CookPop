@@ -1,13 +1,14 @@
 // サムネイル画像。読み込めなかったときは、卵黄色の地に小さなポンの顔を出す。
 import { el, svg } from './ui';
 
-/** ポンの顔（40×40）。卵黄のからだ、こげ茶の目2つ（白いきらり付き）、あんずのくちばし、帽子の白い帯だけ */
+/** ポンの顔（40×40、案C）。線なし。卵黄の丸い体、白い帽子の帯（うすい縁）、点の目2つ（白い光つき）、ほっぺ、くちばし */
 export const PON_FACE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40" aria-hidden="true" focusable="false">
-  <circle cx="20" cy="23" r="15" fill="#FFC43D" stroke="#4A2E1C" stroke-width="2.2"/>
-  <circle cx="14" cy="25" r="2.3" fill="#4A2E1C"/><circle cx="26" cy="25" r="2.3" fill="#4A2E1C"/>
-  <circle cx="14.8" cy="24.1" r=".8" fill="#FFFDF8"/><circle cx="26.8" cy="24.1" r=".8" fill="#FFFDF8"/>
-  <path d="M17.6 28.6 L22.4 28.6 L20 32.4 Z" fill="#FF8A5B" stroke="#4A2E1C" stroke-width="1.4" stroke-linejoin="round"/>
-  <rect x="9" y="5.5" width="22" height="6.5" rx="2.6" fill="#FFFDF8" stroke="#4A2E1C" stroke-width="2.2" stroke-linejoin="round"/>
+  <circle cx="20" cy="23" r="15" fill="#FFD95E"/>
+  <ellipse cx="9.5" cy="26" rx="2.6" ry="1.6" fill="#FF8C7A" opacity=".6"/><ellipse cx="30.5" cy="26" rx="2.6" ry="1.6" fill="#FF8C7A" opacity=".6"/>
+  <circle cx="14" cy="23.5" r="2.4" fill="#3B2614"/><circle cx="26" cy="23.5" r="2.4" fill="#3B2614"/>
+  <circle cx="13.3" cy="22.7" r=".8" fill="#fff"/><circle cx="25.3" cy="22.7" r=".8" fill="#fff"/>
+  <path d="M17.6 27.6 Q20 26 22.4 27.6 Q21.4 30.4 20 30.8 Q18.6 30.4 17.6 27.6 Z" fill="#FF9A57"/>
+  <rect x="6.5" y="6.5" width="27" height="8" rx="4" fill="#fff" stroke="#E2CFAF" stroke-width="1.2"/>
 </svg>`;
 
 /** サムネイルの <img>。読み込みに失敗したとき、または YouTube が「動画が無い」ときに返す 120×90 の灰色の画像だったときは、代わりの絵（.thumb-fallback）に置き換わる */
