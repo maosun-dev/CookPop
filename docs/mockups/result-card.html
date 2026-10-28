@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>結果カードの見本</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root { --cloth:#FFC43D; --accent:#E8573A; --accent-deep:#B83C24; --ink:#4A2E1C; --soft:#8A6A55; }
+  body { margin:0; background:#EDE6DA; font-family:"Zen Maru Gothic",sans-serif; color:var(--ink); padding:20px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  .lead { margin:0 0 18px; color:#7d6250; }
+  .pair { display:flex; gap:24px; flex-wrap:wrap; }
+  .col h2 { font-size:16px; margin:0 0 8px; }
+  .phone { width:330px; height:640px; border-radius:38px; overflow:hidden; box-shadow:0 0 0 8px #2b211b;
+    background-color:#FFF8EC;
+    background-image:linear-gradient(90deg,rgba(255,196,61,.2) 50%,transparent 50%),linear-gradient(rgba(255,196,61,.2) 50%,transparent 50%);
+    background-size:28px 28px; padding:22px 16px; box-sizing:border-box; }
+  .dish { text-align:center; font-size:30px; font-weight:900; color:var(--accent); margin:4px 0 14px; }
+  /* レシピカード */
+  .card { background:#fff; padding:8px 8px 14px; transform:rotate(-1.2deg); box-shadow:0 3px 8px rgba(74,46,28,.13); position:relative; }
+  .card::before { content:""; position:absolute; left:50%; top:-10px; width:64px; height:18px; margin-left:-32px; background:rgba(255,196,61,.8); transform:rotate(2deg); }
+  .media { position:relative; aspect-ratio:16/9; background:#000; overflow:hidden; }
+  .media img, .media iframe { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border:0; }
+  /* 再生マーク：ハンコの色の丸に白い三角。ハンコらしく少し傾ける */
+  .play { position:absolute; left:50%; top:50%; width:74px; height:74px; margin:-37px 0 0 -37px; border-radius:50%;
+    background:var(--accent); box-shadow:inset 0 0 0 4px var(--accent), inset 0 0 0 7px #FFF1E8, 0 4px 0 var(--accent-deep);
+    transform:rotate(-8deg); display:grid; place-items:center; }
+  .play svg { width:30px; height:30px; margin-left:5px; }
+  .hint { position:absolute; left:8px; bottom:8px; background:rgba(255,255,255,.92); color:var(--ink); font-size:12px; font-weight:700;
+    padding:3px 9px; border-radius:3px; transform:rotate(-2deg); }
+  .name { font-size:20px; font-weight:900; margin:12px 4px 2px; }
+  .meta { font-size:12px; color:var(--soft); margin:0 4px 4px; }
+  .made { font-size:13px; margin:0 4px 12px; }
+  .btns { display:flex; gap:8px; margin:0 4px; }
+  .btn { font:inherit; font-weight:900; font-size:15px; border:0; padding:10px 16px; border-radius:4px; }
+  .btn.main { background:var(--accent); color:#fff; box-shadow:0 3px 0 var(--accent-deep); }
+  .btn.sub { background:#FFF8EC; color:var(--ink); box-shadow:0 2px 4px rgba(74,46,28,.12); transform:rotate(1deg); }
+  .open { display:block; text-align:right; font-size:12px; color:var(--soft); margin:6px 4px 0; }
+</style>
+</head>
+<body>
+<h1>結果カードの見本</h1>
+<p class="lead">「動画を見る」のボタンはなし。写真を押すと、その場所で動画に切り替わります。</p>
+<div class="pair">
+  <div class="col">
+    <h2>決まったとき</h2>
+    <div class="phone">
+      <div class="dish">チキンプルコギ</div>
+      <div class="card">
+        <div class="media">
+          <img src="https://i.ytimg.com/vi/m10e2igEArE/hqdefault.jpg" alt="">
+          <span class="play"><svg viewBox="0 0 24 24"><path d="M6 4 L20 12 L6 20 Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></span>
+          <span class="hint">押すと動画が流れます</span>
+        </div>
+        <div class="name">チキンプルコギ</div>
+        <div class="meta">Koh Kentetsu Kitchen　主菜</div>
+        <div class="made">まだ作っていません</div>
+        <div class="btns"><button class="btn main">作った！</button><button class="btn sub">別のにして</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <h2>写真を押したあと</h2>
+    <div class="phone">
+      <div class="dish">チキンプルコギ</div>
+      <div class="card">
+        <div class="media">
+          <iframe src="https://maosun-dev.com/cookpop/player.html?v=m10e2igEArE" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="動画"></iframe>
+        </div>
+        <div class="name">チキンプルコギ</div>
+        <div class="meta">Koh Kentetsu Kitchen　主菜</div>
+        <div class="made">まだ作っていません</div>
+        <div class="btns"><button class="btn main">作った！</button><button class="btn sub">別のにして</button></div>
+        <span class="open">YouTube で開く</span>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
