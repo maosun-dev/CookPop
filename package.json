@@ -23,6 +23,7 @@
     "vitest": "3.2.7"
   },
   "dependencies": {
+    "@capacitor-community/admob": "8.1.0",
     "@capacitor/app": "8.1.2",
     "@capacitor/clipboard": "8.0.1",
     "@capacitor/core": "8.5.2",
