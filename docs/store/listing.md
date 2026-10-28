@@ -10,6 +10,7 @@ App Store Connect のアプリ番号：6826200575。URL はすべて maosun-dev.
 | サブタイトル（30字まで） | 料理動画から今日の献立を決める |
 | カテゴリ | フード＆ドリンク（副：ライフスタイル） |
 | 価格 | 無料 |
+| 配信する国・地域 | 日本だけ（2026-10-29 ユーザーが決定。ヨーロッパなどに広げるときは、広告の同意をあとから変えるボタンを設定に足してから） |
 | サポート URL | https://maosun-dev.com/cookpop/ |
 | マーケティング URL | https://maosun-dev.com/cookpop/ |
 | プライバシーポリシー URL | https://maosun-dev.com/cookpop/privacy.html |
