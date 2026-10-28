@@ -80,3 +80,20 @@ describe('プレーヤー', () => {
     host.remove();
   });
 });
+
+describe('プレーヤー：リンクの置き場', () => {
+  it('linkHost を渡すと、YouTube で開く は枠の外のそちらに出る', () => {
+    const host = document.createElement('div');
+    const linkHost = document.createElement('div');
+    document.body.append(host, linkHost);
+    openPlayer(host, 'HzLAMA5ck_8', { linkHost });
+    expect(host.querySelector('iframe')).not.toBeNull();
+    expect(host.querySelector('a.player-open')).toBeNull();
+    expect(linkHost.querySelector(`a.player-open[href="${WATCH}"]`)).not.toBeNull();
+    // 開き直しても増えない
+    openPlayer(host, 'HzLAMA5ck_8', { linkHost });
+    expect(linkHost.querySelectorAll('a.player-open')).toHaveLength(1);
+    host.remove();
+    linkHost.remove();
+  });
+});

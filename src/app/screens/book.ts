@@ -63,7 +63,11 @@ export function createBookScreen(
   const findRecipe = (id: string): Recipe | undefined => state.data.recipes.find(r => r.id === id);
 
   /** 表示を入れ替える。見えている画面の先頭に戻す */
+  /** 開いているフォームの後片付け（マイタグの購読を外す） */
+  let closeForm: (() => void) | null = null;
   function mount(node: HTMLElement, scroll: boolean): void {
+    closeForm?.();
+    closeForm = null;
     clear(root);
     root.append(node);
     if (scroll && typeof root.scrollIntoView === 'function') root.scrollIntoView({ block: 'start' });
@@ -253,6 +257,7 @@ export function createBookScreen(
       ),
       true,
     );
+    closeForm = form.destroy;
   }
 
   function openForm(prefillUrl?: string): void {

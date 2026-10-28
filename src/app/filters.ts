@@ -5,12 +5,14 @@ import { CATS, type Cat } from '../core/recipe';
 
 /**
  * 選んでいたタグが変わったあとの選び直し。
- * 名前を変えたとき（数も並びも同じ）は新しい名前、消されたときは null（すべて）。
+ * 名前を変えたと見なすのは、古い一覧と新しい一覧で違う名前がちょうど1つずつ・同じ位置のときだけ（新しい名前を返す）。
+ * それ以外で選んでいたタグが無くなったら null（すべて）。
  */
 export function followTag(selected: string | null, prev: string[], next: string[]): string | null {
   if (selected === null || next.includes(selected)) return selected;
   const i = prev.indexOf(selected);
-  return i >= 0 && next.length === prev.length ? next[i] : null;
+  if (i < 0 || next.length !== prev.length) return null;
+  return next.every((n, j) => j === i || n === prev[j]) ? next[i] : null;
 }
 
 export interface Filters {

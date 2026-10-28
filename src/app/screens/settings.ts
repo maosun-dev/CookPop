@@ -32,7 +32,7 @@ const TAG_ERRORS: Record<string, string> = {
   missing: 'そのタグが見つかりませんでした',
 };
 
-export function createSettingsScreen(state: AppState, deps: SettingsDeps): { el: HTMLElement } {
+export function createSettingsScreen(state: AppState, deps: SettingsDeps): { el: HTMLElement; reset(): void } {
   const confirmFn = deps.confirm ?? ((m: string) => window.confirm(m));
 
   // ===== ふきんの色 =====
@@ -178,5 +178,11 @@ export function createSettingsScreen(state: AppState, deps: SettingsDeps): { el:
   state.subscribe(render);
   render();
 
-  return { el: root };
+  /** シートを開くたびに呼ぶ。名前変更の入力欄が残らないよう、一覧の表示に戻す */
+  function reset(): void {
+    editing = null;
+    renderTags();
+  }
+
+  return { el: root, reset };
 }

@@ -4,7 +4,8 @@ import { toast } from '../toast';
 import type { AppState } from '../state';
 import { CATS, findByVideoId, parseVideoId, type Cat } from '../../core/recipe';
 import { fetchMeta, type FetchJson } from '../../core/oembed';
-import { TAGS_PER_RECIPE } from '../../core/tags';
+import { TAGS_PER_RECIPE, normalizeTag } from '../../core/tags';
+import { followTag } from '../filters';
 
 export interface FormDeps {
   fetchJson: FetchJson;
@@ -15,7 +16,7 @@ export interface FormDeps {
   readClipboard?: () => Promise<string>;
 }
 
-export function createForm(state: AppState, deps: FormDeps): { el: HTMLElement; setUrl(url: string): void } {
+export function createForm(state: AppState, deps: FormDeps): { el: HTMLElement; setUrl(url: string): void; destroy(): void } {
   const editing = deps.prefill?.recipeId ? state.data.recipes.find(r => r.id === deps.prefill?.recipeId) : undefined;
 
   let cat: Cat = editing?.cat ?? '主菜';
@@ -127,7 +128,7 @@ export function createForm(state: AppState, deps: FormDeps): { el: HTMLElement; 
             selectedTags = selectedTags.filter(x => x !== t);
             tagErr.textContent = '';
           } else if (selectedTags.length >= TAGS_PER_RECIPE) {
-            tagErr.textContent = `1品に付けられるのは${TAGS_PER_RECIPE}個までだよ`;
+            tagErr.textContent = tooMany;
             return;
           } else {
             selectedTags = [...selectedTags, t];
@@ -143,14 +144,27 @@ export function createForm(state: AppState, deps: FormDeps): { el: HTMLElement; 
     drawMaker();
   }
   const tagMaker = el('div', { class: 'tag-maker row' });
+  const tooMany = `1品に付けられるのは${TAGS_PER_RECIPE}個までだよ`;
   function makeTag(box: HTMLInputElement): void {
     const name = box.value.trim();
+    // すでにある名前なら、エラーにせずそのタグを付ける
+    const existing = normalizeTag(name);
+    if (existing !== null && state.data.settings.myTags.includes(existing)) {
+      const full = !selectedTags.includes(existing) && selectedTags.length >= TAGS_PER_RECIPE;
+      if (!full && !selectedTags.includes(existing)) selectedTags = [...selectedTags, existing];
+      tagMaking = false;
+      drawTags();
+      tagErr.textContent = full ? tooMany : '';
+      return;
+    }
     const res = state.addTag(name);
     if (res === 'ok') {
-      if (selectedTags.length < TAGS_PER_RECIPE) selectedTags = [...selectedTags, name];
+      const full = selectedTags.length >= TAGS_PER_RECIPE;
+      if (!full) selectedTags = [...selectedTags, name];
       tagMaking = false;
-      tagErr.textContent = '';
       drawTags();
+      // タグは作ったが、この料理には付けられなかったことを知らせる
+      tagErr.textContent = full ? tooMany : '';
       return;
     }
     tagErr.textContent = res === 'long' ? '12文字までにしてね'
@@ -177,6 +191,17 @@ export function createForm(state: AppState, deps: FormDeps): { el: HTMLElement; 
     box.focus?.();
   }
   drawTags();
+
+  // 開いている間にマイタグが変わったら（設定での名前変更・削除など）、チップを描き直す
+  let knownTags = [...state.data.settings.myTags];
+  const unsubscribe = state.subscribe(() => {
+    const now = state.data.settings.myTags;
+    selectedTags = selectedTags
+      .map(t => followTag(t, knownTags, now))
+      .filter((t): t is string => t !== null);
+    knownTags = [...now];
+    drawTags();
+  });
 
   const field = (label: string, control: HTMLElement) => el('label', { class: 'field' }, el('span', {}, label), control);
 
@@ -265,5 +290,5 @@ export function createForm(state: AppState, deps: FormDeps): { el: HTMLElement; 
 
   if (deps.prefill?.url) setUrl(deps.prefill.url);
 
-  return { el: root, setUrl };
+  return { el: root, setUrl, destroy: unsubscribe };
 }

@@ -158,18 +158,74 @@ describe('登録フォーム：マイタグ', () => {
     tagChip(f.el, '作り置き').click();
     expect(tagChip(f.el, '作り置き').getAttribute('aria-pressed')).toBe('false');
   });
-  it('エラーの言葉：12文字まで・もうある・20個まで', () => {
+  it('エラーの言葉：12文字まで・20個まで', () => {
     const { state, f } = make();
     create(f, 'あ'.repeat(13));
     expect(f.el.textContent).toContain('12文字までにしてね');
     expect(state.data.settings.myTags).toHaveLength(0);
-    (f.el.querySelector('input[name="newTag"]') as HTMLInputElement).value = 'ほげ';
-    btnOf(f.el, '作る').click();
     create(f, 'ほげ');
-    expect(f.el.textContent).toContain('もうあるよ');
     for (let i = 0; i < 19; i++) state.addTag('t' + i); // ほげ + 19 = 20
     create(f, 'もう一つ');
     expect(f.el.textContent).toContain('20個までだよ');
+  });
+  it('すでにある名前を入れたら、エラーにせずそのタグを付ける', () => {
+    const { state, f } = make();
+    state.addTag('お弁当');
+    tagChip(f.el, 'お弁当');
+    expect(tagChip(f.el, 'お弁当').getAttribute('aria-pressed')).toBe('false');
+    create(f, ' お弁当 ');
+    expect(state.data.settings.myTags).toEqual(['お弁当']);
+    expect(tagChip(f.el, 'お弁当').getAttribute('aria-pressed')).toBe('true');
+    expect(f.el.textContent).not.toContain('もうあるよ');
+    expect(f.el.querySelector('input[name="newTag"]')).toBeNull();
+    // 付いているものをもう一度入れても、外れず・エラーにもならない
+    create(f, 'お弁当');
+    expect(tagChip(f.el, 'お弁当').getAttribute('aria-pressed')).toBe('true');
+    expect(f.el.textContent).not.toContain('もうあるよ');
+  });
+  it('10個付いているときに新しく作ると、タグは作るが付けられないと知らせる', () => {
+    const { state, f } = make();
+    for (let i = 0; i < 10; i++) { state.addTag('t' + i); tagChip(f.el, 't' + i).click(); }
+    expect(tagChip(f.el, 't9').getAttribute('aria-pressed')).toBe('true');
+    create(f, '十一');
+    expect(state.data.settings.myTags).toContain('十一');
+    expect(tagChip(f.el, '十一').getAttribute('aria-pressed')).toBe('false');
+    expect(f.el.querySelector('[role="alert"]:not(:empty)')?.textContent ?? f.el.textContent).toContain('1品に付けられるのは10個までだよ');
+    // すでにある（付いていない）名前を入れた場合も、付けられないと知らせる
+    tagChip(f.el, 't0').click(); // 外すと知らせは消える
+    expect(f.el.textContent).not.toContain('10個までだよ');
+    tagChip(f.el, '十一').click(); // これで10個
+    create(f, 't0');
+    expect(tagChip(f.el, 't0').getAttribute('aria-pressed')).toBe('false');
+    expect(f.el.textContent).toContain('1品に付けられるのは10個までだよ');
+  });
+  it('開いている間にマイタグが変わったら、チップを描き直し、選んだタグも追いかける', () => {
+    const state = mkState();
+    state.addTag('A'); state.addTag('B'); state.addTag('C');
+    const f = createForm(state, { fetchJson: async () => ({}), onDone: () => {} });
+    document.body.append(f.el);
+    tagChip(f.el, 'A').click();
+    tagChip(f.el, 'B').click();
+    state.addTag('D');
+    expect(tagChip(f.el, 'D')).toBeDefined();
+    state.renameTag('A', 'A2');
+    expect(tagChip(f.el, 'A')).toBeUndefined();
+    expect(tagChip(f.el, 'A2').getAttribute('aria-pressed')).toBe('true');
+    state.deleteTag('B');
+    expect(tagChip(f.el, 'B')).toBeUndefined();
+    // 消えたタグは選びから外れる：登録しても付かない
+    f.setUrl('https://youtu.be/ZZZZZZZZZZZ');
+    input(f.el, 'name').value = 'テスト丼';
+    (f.el.querySelector('form') as HTMLFormElement).requestSubmit();
+    expect(state.data.recipes.find(r => r.videoId === 'ZZZZZZZZZZZ')!.tags).toEqual(['A2']);
+  });
+  it('destroy すると購読を外し、あとの変更で描き直さない', () => {
+    const state = mkState();
+    const f = createForm(state, { fetchJson: async () => ({}), onDone: () => {} });
+    document.body.append(f.el);
+    f.destroy();
+    state.addTag('あと');
+    expect(tagChip(f.el, 'あと')).toBeUndefined();
   });
   it('編集でタグを外して保存できる', () => {
     const state = mkState();

@@ -41,7 +41,7 @@ async function boot(): Promise<void> {
   const native = isNativeApp();
   // iPhone では動画を外のブラウザ（YouTube アプリ・Safari）で開く。Web ではそのまま
   const openExternal = native ? nativeOpenExternal(window) : undefined;
-  const openVideo = (host: HTMLElement, videoId: string): void => openPlayer(host, videoId, { openExternal });
+  const openVideo = (host: HTMLElement, videoId: string, linkHost?: HTMLElement): void => openPlayer(host, videoId, { openExternal, linkHost });
   // Filesystem の directory / encoding は enum 型なので、文字列で受ける FsLike へは型だけ合わせる（中身は同じ文字列）
   const files = native ? nativeFiles({ Filesystem: Filesystem as FsLike, Share, FilePicker }) : webFiles();
 
@@ -59,7 +59,7 @@ async function boot(): Promise<void> {
     openPlayer: openVideo,
     confirm: msg => window.confirm(msg),
     pauseAll: pauseAllPlayers,
-    openSettings: () => { openSheet(settings.el, '設定'); },
+    openSettings: () => { settings.reset(); openSheet(settings.el, '設定'); },
     // 押されたときだけ読む（勝手に読むと iPhone が毎回「ペーストを許可」と聞くため）
     readClipboard: native
       ? nativeClipboardRead(Clipboard)

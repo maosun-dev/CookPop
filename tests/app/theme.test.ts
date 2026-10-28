@@ -70,7 +70,8 @@ describe('テーマ', () => {
   it('style.css：カード・台紙はまっすぐで、テープは56×16・3度', () => {
     for (const sel of ['.pop', '.card', '.bubble', '.tile', '.screen-title']) {
       const b = block(sel);
-      if (b) expect(b, sel).not.toContain('rotate');
+      expect(b, `${sel} のブロックが見つかる`).not.toBeNull();
+      expect(b!, sel).not.toContain('rotate');
     }
     const tape = css().match(/\.tape::before[^{]*\{([^}]*)\}/)![1];
     expect(tape).toContain('width: 56px');

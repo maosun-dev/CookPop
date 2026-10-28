@@ -120,6 +120,29 @@ describe('state', () => {
       expect(c.calls()).toBe(base + 3);
       expect(c.s.data.recipes).toHaveLength(8);
     });
+    it('名前の変更・消す・料理のタグの置き換えは、成功なら保存と知らせが1回ずつ。失敗や変化なしは0回', () => {
+      const c = counted();
+      const id = c.s.data.recipes[0].id;
+      c.s.addTag('A'); c.s.addTag('B');
+      const [calls0, saves0] = [c.calls(), c.saves()];
+      expect(c.s.renameTag('A', 'C')).toBe('ok');
+      expect([c.calls() - calls0, c.saves() - saves0]).toEqual([1, 1]);
+      c.s.setRecipeTags(id, ['C']);
+      expect([c.calls() - calls0, c.saves() - saves0]).toEqual([2, 2]);
+      c.s.deleteTag('C');
+      expect([c.calls() - calls0, c.saves() - saves0]).toEqual([3, 3]);
+      // 失敗・存在しないもの
+      c.s.renameTag('Z', 'Y'); c.s.renameTag('B', 'B2'.repeat(7)); c.s.renameTag('B', ' ');
+      c.s.deleteTag('なし'); c.s.setRecipeTags('なし', ['B']);
+      expect([c.calls() - calls0, c.saves() - saves0]).toEqual([3, 3]);
+    });
+    it('同じ名前への renameTag は ok だが、保存も知らせもしない', () => {
+      const c = counted();
+      c.s.addTag('A');
+      const [calls0, saves0] = [c.calls(), c.saves()];
+      expect(c.s.renameTag('A', ' A ')).toBe('ok');
+      expect([c.calls() - calls0, c.saves() - saves0]).toEqual([0, 0]);
+    });
     it('ふきんの色を変えられ、登録時のタグはマイタグのものだけ', () => {
       const c = counted();
       c.s.updateSettings({ cloth: 'blue' });

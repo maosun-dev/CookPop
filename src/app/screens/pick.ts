@@ -15,7 +15,8 @@ export interface PickDeps {
   rng: () => number;
   mascot: Mascot;
   /** 動画を見るとき。host はカード内の枠 */
-  openPlayer: (host: HTMLElement, videoId: string) => void;
+  /** linkHost：「YouTube で開く」を出す場所（カードのボタンの下） */
+  openPlayer: (host: HTMLElement, videoId: string, linkHost?: HTMLElement) => void;
   now: () => Date;
   /** 献立帳のタブへ移る（はじめましての案内のボタン用） */
   openBook?: () => void;
@@ -114,6 +115,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
   /** チップの押した状態・ボタンの無効・空の案内を更新する（作り直さない） */
   function paintControls(): void {
     const list = candidates();
+    filters.catRow.hidden = state.data.recipes.length === 0; // 0品のときはジャンルの段も隠す（献立帳と同じ）
     favChip.setAttribute('aria-pressed', favOnly ? 'true' : 'false');
     threeChip.setAttribute('aria-pressed', pickThree ? 'true' : 'false');
     rollBtn.disabled = spinning || list.length === 0;
@@ -141,25 +143,28 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
     // 写真の入れ物。押すと、この入れ物の中身が動画のプレーヤー（と下の「YouTube で開く」）に替わる
     const mediaHost = el('div', { class: 'media-host' });
     const thumbHost = el('div', { class: 'thumb-host' });
+    const linkHost = el('div', { class: 'link-host' });
     const play = (): void => {
       if (mediaHost.querySelector('.player')) return; // もう動画に替わっている
-      watch(id, mediaHost);
+      watch(id, mediaHost, linkHost);
+      playMemo.hidden = true; // 動画に変わったら、押しても何も起きない角のメモは隠す
     };
     mediaHost.append(el('button', { class: 'media', type: 'button', 'aria-label': '動画を流す', onclick: play }, thumbHost));
     const title = el('h2', { class: 'card-title' });
     const meta = el('p', { class: 'muted' });
     const memo = el('p', { class: 'memo' });
     const count = el('p', { class: 'count' });
+    // 右上の角のメモ。写真にも名前にも重ならない（カードの上の余白に貼る）
+    const playMemo = el(
+      'button',
+      { class: 'play-memo', type: 'button', onclick: play },
+      el('span', { class: 'play-dot', 'aria-hidden': 'true' }, svg('<svg viewBox="0 0 24 24"><path d="M6 4 L20 12 L6 20 Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>')),
+      '動画を流す',
+    );
     const card = el(
       'article',
       { class: 'card pop result rise' },
-      // 右上の角のメモ。写真にも名前にも重ならない（カードの上の余白に貼る）
-      el(
-        'button',
-        { class: 'play-memo', type: 'button', onclick: play },
-        el('span', { class: 'play-dot', 'aria-hidden': 'true' }, svg('<svg viewBox="0 0 24 24"><path d="M6 4 L20 12 L6 20 Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>')),
-        '動画を流す',
-      ),
+      playMemo,
       mediaHost,
       el(
         'div',
@@ -174,6 +179,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
           el('button', { class: 'btn btn-leaf pop pop-press', type: 'button', onclick: () => cooked(id) }, '作った！'),
           el('button', { class: 'btn pop pop-press', type: 'button', onclick: () => another(id) }, '別のにして'),
         ),
+        linkHost,
       ),
     );
     view = { thumbHost, title, meta, memo, count };
@@ -239,9 +245,9 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
     roll([id]);
   }
 
-  function watch(id: string, host: HTMLElement): void {
+  function watch(id: string, host: HTMLElement, linkHost: HTMLElement): void {
     const recipe = findRecipe(id);
-    if (recipe) deps.openPlayer(host, recipe.videoId);
+    if (recipe) deps.openPlayer(host, recipe.videoId, linkHost);
   }
 
   /** 3枚から選ぶ */

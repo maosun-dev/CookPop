@@ -69,6 +69,34 @@ describe('きめる画面', () => {
     const photo = scr.el.querySelector('.result .media') as HTMLElement;
     expect(photo.querySelector('.play-memo')).toBeNull();
   });
+  it('動画に変わったら角の「動画を流す」メモを隠す。YouTube で開くの置き場はボタンの下', () => {
+    const links: HTMLElement[] = [];
+    Object.defineProperty(window, 'matchMedia', { writable: true, value: () => ({ matches: true, addEventListener() {}, removeEventListener() {} }) });
+    const state = createState(fake(), () => new Date(2026, 9, 23, 19), () => 'x');
+    const scr = createPickScreen(state, { rng: () => 0, mascot: createMascot(), openPlayer: (_h, _v, l) => { if (l) links.push(l); }, now: () => new Date(2026, 9, 23, 19) });
+    document.body.append(scr.el);
+    (scr.el.querySelector('#roll') as HTMLButtonElement).click();
+    const memo = scr.el.querySelector('.result .play-memo') as HTMLElement;
+    expect(memo.hidden).toBe(false);
+    memo.click();
+    expect(memo.hidden).toBe(true);
+    expect(links).toHaveLength(1);
+    const row = scr.el.querySelector('.result .row') as HTMLElement;
+    expect(row.compareDocumentPosition(links[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(scr.el.querySelector('.result')!.contains(links[0])).toBe(true);
+    // 新しい結果カードのメモは出ている
+    (scr.el.querySelector('#roll') as HTMLButtonElement).click();
+    expect((scr.el.querySelector('.result .play-memo') as HTMLElement).hidden).toBe(false);
+  });
+  it('料理が0品なら、ジャンルの段を隠す', () => {
+    const { scr, state } = setup();
+    const cat = scr.el.querySelector('[aria-label="ジャンル"]') as HTMLElement;
+    expect(cat.hidden).toBe(false);
+    for (const r of [...state.data.recipes]) state.deleteRecipe(r.id);
+    expect(cat.hidden).toBe(true);
+    state.addRecipe({ url: 'https://youtu.be/AAAAAAAAAAA', name: 'あ', cat: '主菜', channel: '', thumb: '', memo: '' });
+    expect(cat.hidden).toBe(false);
+  });
   it('写真を押しても openPlayer が呼ばれる。入れ物はカードの中', () => {
     const hosts: HTMLElement[] = [];
     Object.defineProperty(window, 'matchMedia', { writable: true, value: () => ({ matches: true, addEventListener() {}, removeEventListener() {} }) });

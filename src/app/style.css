@@ -289,7 +289,7 @@ textarea.input { min-height: 88px; resize: vertical; }
   -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
 .tag { display: inline-block; padding: 0 10px; border-radius: 3px; font-size: var(--fs-1);
   font-weight: 700; line-height: 1.5; background: rgba(var(--accent-rgb), .12); color: var(--tag-ink); }
-.tag-my { font-size: 11px; padding: 0 8px; background: rgba(138, 106, 85, .16); color: var(--ink-soft); }
+.tag-my { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; padding: 0 8px; background: rgba(138, 106, 85, .16); color: var(--ink-soft); }
 .tile-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 
 /* 星：画像の右上に丸いバッジ。押せる範囲は見た目より外に少し広げる */

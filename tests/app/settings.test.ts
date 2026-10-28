@@ -90,6 +90,20 @@ describe('設定：ふきんの色とマイタグ', () => {
     expect(btns[2].getAttribute('aria-pressed')).toBe('true');
     expect(btns[0].getAttribute('aria-pressed')).toBe('false');
   });
+  it('シートの中身の順番：ふきんの色／見た目／マイタグ／バックアップ／このアプリについて', () => {
+    const { scr } = mk();
+    const titles = [...scr.el.querySelectorAll('.section-title')].map(h => h.textContent);
+    expect(titles).toEqual(['ふきんの色', '見た目', 'マイタグの整理', 'バックアップ', 'このアプリについて']);
+  });
+  it('開き直すとき reset() で、名前変更の入力欄が一覧の表示に戻る', () => {
+    const { state, scr } = mk();
+    state.addTag('あ');
+    btn(scr.el, '名前を変える').click();
+    expect(scr.el.querySelector('.tag-row input')).not.toBeNull();
+    scr.reset();
+    expect(scr.el.querySelector('.tag-row input')).toBeNull();
+    expect(btn(scr.el, '名前を変える')).toBeDefined();
+  });
   it('マイタグが無いときは、無いと書く', () => {
     const { scr } = mk();
     expect(scr.el.querySelector('.tag-manage')!.textContent).toContain('まだありません');

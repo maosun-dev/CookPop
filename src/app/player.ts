@@ -12,6 +12,8 @@ export interface PlayerDeps {
   openExternal?: (url: string) => void;
   /** 動画ページから「準備できた」が来るまで待つ時間（ミリ秒）。既定 10000 */
   timeoutMs?: number;
+  /** 「YouTube で開く」を出す場所。無ければ動画の枠の下に出す */
+  linkHost?: HTMLElement;
 }
 
 interface HostState {
@@ -68,7 +70,13 @@ export function openPlayer(host: HTMLElement, videoId: string, deps: PlayerDeps 
     'YouTube で開く',
   );
   clear(host);
-  host.append(frame, smallLink);
+  host.append(frame);
+  if (deps.linkHost) {
+    clear(deps.linkHost);
+    deps.linkHost.append(smallLink);
+  } else {
+    host.append(smallLink);
+  }
   liveFrames.set(iframe, host);
 
   let timer: ReturnType<typeof setTimeout> | undefined;
