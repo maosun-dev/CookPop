@@ -20,8 +20,8 @@ describe('献立帳', () => {
   it('8品が並び、ジャンルとお気に入りで絞れる', () => {
     const { scr, state } = setup();
     expect(scr.el.querySelectorAll('.tile')).toHaveLength(8);
-    ([...scr.el.querySelectorAll('.chip')].find(c => c.textContent === 'ご飯・麺') as HTMLElement).click();
-    expect(scr.el.querySelectorAll('.tile')).toHaveLength(3);
+    ([...scr.el.querySelectorAll('.chip')].find(c => c.textContent === '麺') as HTMLElement).click();
+    expect(scr.el.querySelectorAll('.tile')).toHaveLength(1);
     state.toggleFav(state.data.recipes[0].id);
     ([...scr.el.querySelectorAll('.chip')].find(c => c.textContent === 'お気に入りだけ') as HTMLElement).click();
     expect(scr.el.querySelectorAll('.tile')).toHaveLength(0);

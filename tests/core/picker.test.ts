@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { weightOf, pickOne, pickMany } from '../../src/core/picker';
+import { weightOf, pickOne, pickMany, filterRecipes } from '../../src/core/picker';
 import { newRecipe, type Recipe } from '../../src/core/recipe';
 import type { CookLog } from '../../src/core/log';
 
@@ -65,5 +65,19 @@ describe('3つ選ぶ', () => {
   });
   it('元から exclude があればそれも避ける', () => {
     expect(pickMany({ recipes: [rec('a'), rec('b'), rec('c')], logs: [], today, rng: first, exclude: ['a'] }, 3).map(r => r.id)).toEqual(['b', 'c']);
+  });
+});
+
+describe('絞り込み', () => {
+  const a = { ...rec('a'), cat: '主菜' as const, tags: ['時短'], fav: true };
+  const b = { ...rec('b'), cat: '主菜' as const, tags: [], fav: false };
+  const c = { ...rec('c'), cat: '麺' as const, tags: ['時短'], fav: true };
+  const ids = (f: Parameters<typeof filterRecipes>[1]) => filterRecipes([a, b, c], f).map(r => r.id);
+  it('指定なしは全部', () => expect(ids({ cat: null, tag: null, favOnly: false })).toEqual(['a', 'b', 'c']));
+  it('全部「かつ」', () => {
+    expect(ids({ cat: '主菜', tag: null, favOnly: false })).toEqual(['a', 'b']);
+    expect(ids({ cat: null, tag: '時短', favOnly: false })).toEqual(['a', 'c']);
+    expect(ids({ cat: '主菜', tag: '時短', favOnly: true })).toEqual(['a']);
+    expect(ids({ cat: '麺', tag: null, favOnly: true })).toEqual(['c']);
   });
 });

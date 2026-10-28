@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CATS, parseVideoId, thumbUrl, newRecipe, sanitizeRecipe, defaultRecipes, findByVideoId } from '../../src/core/recipe';
+import { CATS, legacyCat, parseVideoId, thumbUrl, newRecipe, sanitizeRecipe, defaultRecipes, findByVideoId } from '../../src/core/recipe';
 
 describe('リンクの解析', () => {
   it('youtube.com / youtu.be / shorts / live / embed / m. / nocookie から ID を取る', () => {
@@ -37,7 +37,7 @@ describe('料理を作る', () => {
     const r = newRecipe({ url: 'https://youtu.be/HzLAMA5ck_8', name: '  よだれ水餃子 ', cat: '主菜' }, 'r1', '2026-10-23');
     expect(r).toEqual({
       id: 'r1', videoId: 'HzLAMA5ck_8', url: 'https://youtu.be/HzLAMA5ck_8', name: 'よだれ水餃子', cat: '主菜',
-      channel: '', thumb: 'https://i.ytimg.com/vi/HzLAMA5ck_8/hqdefault.jpg', memo: '', fav: false, addedAt: '2026-10-23',
+      channel: '', thumb: 'https://i.ytimg.com/vi/HzLAMA5ck_8/hqdefault.jpg', memo: '', fav: false, tags: [], addedAt: '2026-10-23',
     });
   });
   it('名前は 40 文字、メモは 400 文字で切る', () => {
@@ -53,7 +53,7 @@ describe('料理を作る', () => {
 
 describe('保存から読むときの検証', () => {
   it('正しいものはそのまま', () => {
-    const ok = { id: 'a', videoId: 'HzLAMA5ck_8', url: 'https://youtu.be/HzLAMA5ck_8', name: 'n', cat: '汁物', channel: 'c', thumb: 'https://i.ytimg.com/vi/HzLAMA5ck_8/hqdefault.jpg', memo: 'm', fav: true, addedAt: '2026-10-23' };
+    const ok = { id: 'a', videoId: 'HzLAMA5ck_8', url: 'https://youtu.be/HzLAMA5ck_8', name: 'n', cat: '汁物', channel: 'c', thumb: 'https://i.ytimg.com/vi/HzLAMA5ck_8/hqdefault.jpg', memo: 'm', fav: true, tags: [], addedAt: '2026-10-23' };
     expect(sanitizeRecipe(ok)).toEqual(ok);
   });
   it('id・videoId・name が無ければ null', () => {
@@ -95,7 +95,7 @@ describe('保存から読むときの検証', () => {
 });
 
 describe('最初の8品', () => {
-  it('8品あり、id は d-<videoId>、ジャンルは5つの中', () => {
+  it('8品あり、id は d-<videoId>、ジャンルは7つの中', () => {
     const rs = defaultRecipes('2026-10-23');
     expect(rs).toHaveLength(8);
     for (const r of rs) {
@@ -107,5 +107,28 @@ describe('最初の8品', () => {
     expect(rs.map(r => r.name)).toContain('よだれ水餃子');
     expect(findByVideoId(rs, 'dbv6nPx4e3c')?.name).toBe('オムそば');
     expect(findByVideoId(rs, 'nai')).toBeUndefined();
+  });
+});
+
+describe('旧ジャンルの振り分けとタグ', () => {
+  const base = { id: 'a', videoId: 'HzLAMA5ck_8', name: 'n' };
+  it('legacyCat', () => {
+    expect(legacyCat('きつねうどん')).toBe('麺');
+    expect(legacyCat('親子丼')).toBe('ご飯');
+  });
+  it('ご飯・麺は料理名で振り分ける', () => {
+    expect(sanitizeRecipe({ ...base, cat: 'ご飯・麺', name: '焼きそば' })!.cat).toBe('麺');
+    expect(sanitizeRecipe({ ...base, cat: 'ご飯・麺', name: 'チャーハン' })!.cat).toBe('ご飯');
+  });
+  it('最初の8品の3品は決まったジャンルへ', () => {
+    const fix = (v: string, name: string) => sanitizeRecipe({ id: 'd-' + v, videoId: v, name, cat: 'ご飯・麺' })!.cat;
+    expect(fix('dbv6nPx4e3c', 'オムそば')).toBe('麺');
+    expect(fix('fsUZY-9V1TI', 'お弁当')).toBe('ご飯');
+    expect(fix('30kBepMXiVE', 'ベーコンエッグサンド')).toBe('パン');
+  });
+  it('tags の検証', () => {
+    expect(sanitizeRecipe({ ...base, tags: [' 時短 ', '時短', 3] })!.tags).toEqual(['時短']);
+    expect(sanitizeRecipe({ ...base, tags: Array.from({ length: 11 }, (_, i) => 't' + i) })!.tags).toHaveLength(10);
+    expect(sanitizeRecipe(base)!.tags).toEqual([]);
   });
 });

@@ -11,22 +11,31 @@ export interface KeyValueStore {
 export const DATA_KEY = 'cookpop.data';
 /** 読めなかった保存データの退避先 */
 export const BROKEN_KEY = 'cookpop.data.broken';
-export const DATA_VERSION = 1;
+export const DATA_VERSION = 2;
 
 export type Theme = 'auto' | 'light' | 'dark';
 const THEMES: readonly unknown[] = ['auto', 'light', 'dark'];
 
+export type Cloth = 'yellow' | 'red' | 'green' | 'blue' | 'pink' | 'purple';
+export const CLOTHS: readonly Cloth[] = ['yellow', 'red', 'green', 'blue', 'pink', 'purple'];
+
+/** マイタグの最大数・名前の最大文字数 */
+const MY_TAGS_MAX = 20;
+const MY_TAG_LEN = 12;
+
 export interface Settings {
+  cloth: Cloth;
+  myTags: string[];
   theme: Theme;
   clipboardCheck: boolean;
   noAds: boolean;
   lastClipboardVideoId: string;
 }
 
-export const DEFAULT_SETTINGS: Settings = { theme: 'auto', clipboardCheck: true, noAds: false, lastClipboardVideoId: '' };
+export const DEFAULT_SETTINGS: Settings = { cloth: 'yellow', myTags: [], theme: 'auto', clipboardCheck: true, noAds: false, lastClipboardVideoId: '' };
 
 export interface AppData {
-  version: 1;
+  version: 2;
   recipes: Recipe[];
   logs: CookLog[];
   settings: Settings;
@@ -38,9 +47,26 @@ export function initialData(today: string): AppData {
 }
 
 /** 保存から読んだ設定を項目ごとに検証する。おかしい項目は既定に戻す */
+/** 保存から読んだマイタグ名を整える（前後の空白を取る・1〜12 文字・重複なし・20 個まで） */
+function sanitizeMyTags(x: unknown): string[] {
+  if (!Array.isArray(x)) return [];
+  const out: string[] = [];
+  for (const t of x) {
+    if (typeof t !== 'string') continue;
+    const name = t.trim();
+    const len = Array.from(name).length;
+    if (len < 1 || len > MY_TAG_LEN || out.includes(name)) continue;
+    out.push(name);
+    if (out.length >= MY_TAGS_MAX) break;
+  }
+  return out;
+}
+
 export function sanitizeSettings(x: unknown): Settings {
   const o: Record<string, unknown> = typeof x === 'object' && x !== null ? (x as Record<string, unknown>) : {};
   return {
+    cloth: CLOTHS.includes(o.cloth as Cloth) ? (o.cloth as Cloth) : DEFAULT_SETTINGS.cloth,
+    myTags: sanitizeMyTags(o.myTags),
     theme: THEMES.includes(o.theme) ? (o.theme as Theme) : DEFAULT_SETTINGS.theme,
     clipboardCheck: typeof o.clipboardCheck === 'boolean' ? o.clipboardCheck : DEFAULT_SETTINGS.clipboardCheck,
     noAds: typeof o.noAds === 'boolean' ? o.noAds : DEFAULT_SETTINGS.noAds,
@@ -48,7 +74,7 @@ export function sanitizeSettings(x: unknown): Settings {
   };
 }
 
-/** 文字列から保存データを読む。JSON でない・オブジェクトでない・新しい版のときは null（今は版1だけなので読み替えはしない） */
+/** 文字列から保存データを読む。JSON でない・オブジェクトでない・新しい版のときは null（版1は版2に読み替える） */
 export function parseData(raw: string): AppData | null {
   let x: unknown;
   try {
@@ -67,11 +93,14 @@ export function parseData(raw: string): AppData | null {
       if (r) recipes.push(r);
     }
   }
+  const settings = sanitizeSettings(o.settings);
+  // マイタグに無いタグは料理から外す
+  const fixed = recipes.map(r => ({ ...r, tags: r.tags.filter(t => settings.myTags.includes(t)) }));
   return {
     version: DATA_VERSION,
-    recipes,
+    recipes: fixed,
     logs: sanitizeLogs(o.logs),
-    settings: sanitizeSettings(o.settings),
+    settings,
   };
 }
 
@@ -133,5 +162,14 @@ export function importBackup(current: AppData, raw: string, mode: 'replace' | 'm
     seen.set(k, count);
     if (count > (have.get(k) ?? 0)) logs.push(fixed);
   }
-  return { version: DATA_VERSION, recipes, logs, settings: current.settings };
+  // マイタグ：今のものに無い名前を後ろへ足す。20 個を超えた分は捨て、足した料理からも外す
+  const myTags = [...current.settings.myTags];
+  for (const t of imported.settings.myTags) {
+    if (myTags.includes(t)) continue;
+    if (myTags.length < MY_TAGS_MAX) myTags.push(t);
+  }
+  const added = new Set(recipes.slice(current.recipes.length));
+  const fixedRecipes = recipes.map(r =>
+    added.has(r) ? { ...r, tags: r.tags.filter(t => myTags.includes(t)) } : r);
+  return { version: DATA_VERSION, recipes: fixedRecipes, logs, settings: { ...current.settings, myTags } };
 }

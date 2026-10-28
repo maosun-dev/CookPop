@@ -1,7 +1,7 @@
 // ルーレットの選び方。最近作ったものは出にくくする。乱数は rng だけを使う。
 import { daysBetween } from './date';
 import { lastMade, type CookLog } from './log';
-import type { Recipe } from './recipe';
+import type { Cat, Recipe } from './recipe';
 
 export interface PickInput {
   recipes: Recipe[];
@@ -66,4 +66,9 @@ export function pickMany(input: PickInput, n: number): Recipe[] {
     exclude.push(one.id);
   }
   return picked;
+}
+
+/** ジャンル・タグ・お気に入りの絞り込み（指定したものを全部満たす料理だけ） */
+export function filterRecipes(recipes: Recipe[], f: { cat: Cat | null; tag: string | null; favOnly: boolean }): Recipe[] {
+  return recipes.filter(r => (f.cat === null || r.cat === f.cat) && (f.tag === null || r.tags.includes(f.tag)) && (!f.favOnly || r.fav));
 }

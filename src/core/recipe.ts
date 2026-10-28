@@ -1,7 +1,7 @@
 // 料理の形（Recipe）と、YouTube のリンクの解析。
 import { isDateStr } from './date';
 
-export const CATS = ['主菜', '副菜', '汁物', 'ご飯・麺', 'おやつ'] as const;
+export const CATS = ['主菜', '副菜', '汁物', 'ご飯', '麺', 'パン', 'おやつ'] as const;
 export type Cat = typeof CATS[number];
 
 export interface Recipe {
@@ -14,6 +14,8 @@ export interface Recipe {
   thumb: string;
   memo: string;
   fav: boolean;
+  /** マイタグ（名前の一覧。10 個まで） */
+  tags: string[];
   /** 追加した日。'YYYY-MM-DD'（不明なら空文字） */
   addedAt: string;
 }
@@ -25,6 +27,7 @@ export interface RecipeInput {
   channel?: string;
   thumb?: string;
   memo?: string;
+  tags?: string[];
 }
 
 // core の型検査は DOM の型を持たないので、使う分だけ URL の形をここで宣言する（実行時は標準の URL）
@@ -38,6 +41,8 @@ declare const URL: new (url: string) => ParsedUrl;
 
 const NAME_MAX = 40;
 const MEMO_MAX = 400;
+/** 1品に付けられるタグの数 */
+const RECIPE_TAGS_MAX = 10;
 const DEFAULT_CHANNEL = 'Koh Kentetsu Kitchen';
 
 /** 動画 ID として使える形か */
@@ -91,6 +96,34 @@ function clip(s: string, max: number): string {
   return Array.from(s).slice(0, max).join('');
 }
 
+/** タグ名の配列を整える。文字列だけ・前後の空白を取る・空と重複を除く・10 個まで */
+function cleanTags(x: unknown): string[] {
+  if (!Array.isArray(x)) return [];
+  const out: string[] = [];
+  for (const t of x) {
+    if (typeof t !== 'string') continue;
+    const name = t.trim();
+    if (name && !out.includes(name)) out.push(name);
+    if (out.length >= RECIPE_TAGS_MAX) break;
+  }
+  return out;
+}
+
+/** 麺を表す言葉 */
+export const NOODLE_WORDS = ['麺', 'そば', 'うどん', 'ラーメン', 'らーめん', 'パスタ', 'スパゲ', 'そうめん', '焼きそば', 'やきそば'];
+
+/** 旧「ご飯・麺」を、料理名から麺かご飯に振り分ける */
+export function legacyCat(name: string): '麺' | 'ご飯' {
+  return NOODLE_WORDS.some(w => name.includes(w)) ? '麺' : 'ご飯';
+}
+
+/** 最初の8品のうち、旧「ご飯・麺」だった3品の振り分け（動画 ID → ジャンル） */
+const DEFAULT_CAT_FIX: Record<string, Cat> = {
+  'dbv6nPx4e3c': '麺',
+  'fsUZY-9V1TI': 'ご飯',
+  '30kBepMXiVE': 'パン',
+};
+
 /** リンクと名前から料理を作る。リンクが読めない・名前が空なら null */
 export function newRecipe(input: RecipeInput, id: string, today: string): Recipe | null {
   const videoId = parseVideoId(input.url);
@@ -107,6 +140,7 @@ export function newRecipe(input: RecipeInput, id: string, today: string): Recipe
     thumb: input.thumb || thumbUrl(videoId),
     memo: clip((input.memo ?? '').trim(), MEMO_MAX),
     fav: false,
+    tags: cleanTags(input.tags),
     addedAt: today,
   };
 }
@@ -126,7 +160,11 @@ export function sanitizeRecipe(x: unknown): Recipe | null {
   if (!name) return null;
   const url = str(o.url).trim();
   const thumb = str(o.thumb);
-  const cat = (CATS as readonly unknown[]).includes(o.cat) ? (o.cat as Cat) : '主菜';
+  let cat: Cat = (CATS as readonly unknown[]).includes(o.cat) ? (o.cat as Cat) : '主菜';
+  if (o.cat === 'ご飯・麺') {
+    const fix = id.startsWith('d-') ? DEFAULT_CAT_FIX[id.slice(2)] : undefined;
+    cat = fix ?? legacyCat(name);
+  }
   return {
     id,
     videoId,
@@ -137,6 +175,7 @@ export function sanitizeRecipe(x: unknown): Recipe | null {
     thumb: thumb.startsWith('https://') ? thumb : thumbUrl(videoId),
     memo: clip(str(o.memo).trim(), MEMO_MAX),
     fav: o.fav === true,
+    tags: cleanTags(o.tags),
     addedAt: isDateStr(o.addedAt) ? o.addedAt : '',
   };
 }
@@ -148,9 +187,9 @@ const DEFAULT_SOURCE: ReadonlyArray<readonly [string, string, Cat]> = [
   ['kd6n-8uQdWo', '豚プルコギ', '主菜'],
   ['4pi3UGSfvig', '豆腐つくね', '主菜'],
   ['HMWVJFsgfQY', 'ポン酢チキン', '主菜'],
-  ['dbv6nPx4e3c', 'オムそば', 'ご飯・麺'],
-  ['fsUZY-9V1TI', 'スパムとキムチごはんのお弁当', 'ご飯・麺'],
-  ['30kBepMXiVE', 'ベーコンエッグサンド', 'ご飯・麺'],
+  ['dbv6nPx4e3c', 'オムそば', '麺'],
+  ['fsUZY-9V1TI', 'スパムとキムチごはんのお弁当', 'ご飯'],
+  ['30kBepMXiVE', 'ベーコンエッグサンド', 'パン'],
 ];
 
 /** 最初に入れておく8品。today は追加した日として入れる */
@@ -165,6 +204,7 @@ export function defaultRecipes(today: string): Recipe[] {
     thumb: thumbUrl(videoId),
     memo: '',
     fav: false,
+    tags: [],
     addedAt: today,
   }));
 }
