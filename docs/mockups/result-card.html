@@ -18,7 +18,7 @@
     background-size:28px 28px; padding:22px 16px; box-sizing:border-box; }
   .dish { text-align:center; font-size:30px; font-weight:900; color:var(--accent); margin:4px 0 14px; }
   /* レシピカード */
-  .card { background:#fff; padding:8px 8px 14px; transform:rotate(-1.2deg); box-shadow:0 3px 8px rgba(74,46,28,.13); position:relative; }
+  .card { background:#fff; padding:8px 8px 14px; box-shadow:0 3px 8px rgba(74,46,28,.13); position:relative; }
   .card::before { content:""; position:absolute; left:50%; top:-10px; width:64px; height:18px; margin-left:-32px; background:rgba(255,196,61,.8); transform:rotate(2deg); }
   .media { position:relative; aspect-ratio:16/9; background:#000; overflow:hidden; }
   .media img, .media iframe { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border:0; }
@@ -35,25 +35,33 @@
   .btns { display:flex; gap:8px; margin:0 4px; }
   .btn { font:inherit; font-weight:900; font-size:15px; border:0; padding:10px 16px; border-radius:4px; }
   .btn.main { background:var(--accent); color:#fff; box-shadow:0 3px 0 var(--accent-deep); }
-  .btn.sub { background:#FFF8EC; color:var(--ink); box-shadow:0 2px 4px rgba(74,46,28,.12); transform:rotate(1deg); }
+  .btn.sub { background:#FFF8EC; color:var(--ink); box-shadow:0 2px 4px rgba(74,46,28,.12); }
   .open { display:block; text-align:right; font-size:12px; color:var(--soft); margin:6px 4px 0; }
+
+  /* 再生のメモ（写真にかぶせない） */
+  .memo { display:inline-flex; align-items:center; gap:8px; background:#FFFBEF; padding:8px 12px 8px 8px; border-radius:3px;
+    box-shadow:0 2px 5px rgba(74,46,28,.14); position:relative; font-weight:900; font-size:14px; }
+  .memo::before { content:""; position:absolute; left:50%; top:-7px; width:34px; height:12px; margin-left:-17px; background:rgba(255,196,61,.8); transform:rotate(-3deg); }
+  .memo .dot { width:34px; height:34px; border-radius:50%; background:var(--accent); display:grid; place-items:center;
+    box-shadow:inset 0 0 0 3px var(--accent), inset 0 0 0 5px #FFF1E8; transform:rotate(-8deg); }
+  .memo .dot svg { width:14px; height:14px; margin-left:3px; }
+  .row1 { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:12px 4px 2px; }
+  .row1 .name { margin:0; }
+  .memoB { transform:rotate(2deg); flex-shrink:0; }
+  .memoC { position:absolute; right:-10px; top:-40px; transform:rotate(4deg); z-index:2; }
 </style>
 </head>
 <body>
 <h1>結果カードの見本</h1>
-<p class="lead">「動画を見る」のボタンはなし。写真を押すと、その場所で動画に切り替わります。</p>
+<p class="lead">写真には何も重ねず、再生マーク入りのメモを別の場所に貼る形。メモを押しても写真を押しても、写真の場所で動画が流れます。</p>
 <div class="pair">
   <div class="col">
-    <h2>決まったとき</h2>
+    <h2>案1 名前の横にメモ</h2>
     <div class="phone">
       <div class="dish">チキンプルコギ</div>
       <div class="card">
-        <div class="media">
-          <img src="https://i.ytimg.com/vi/m10e2igEArE/hqdefault.jpg" alt="">
-          <span class="play"><svg viewBox="0 0 24 24"><path d="M6 4 L20 12 L6 20 Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></span>
-          <span class="hint">押すと動画が流れます</span>
-        </div>
-        <div class="name">チキンプルコギ</div>
+        <div class="media"><img src="https://i.ytimg.com/vi/m10e2igEArE/hqdefault.jpg" alt=""></div>
+        <div class="row1"><div class="name">チキンプルコギ</div><span class="memo memoB"><span class="dot"><svg viewBox="0 0 24 24"><path d="M6 4 L20 12 L6 20 Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></span>動画を流す</span></div>
         <div class="meta">Koh Kentetsu Kitchen　主菜</div>
         <div class="made">まだ作っていません</div>
         <div class="btns"><button class="btn main">作った！</button><button class="btn sub">別のにして</button></div>
@@ -61,18 +69,16 @@
     </div>
   </div>
   <div class="col">
-    <h2>写真を押したあと</h2>
+    <h2>案2 カードの角にメモを貼る</h2>
     <div class="phone">
       <div class="dish">チキンプルコギ</div>
       <div class="card">
-        <div class="media">
-          <iframe src="https://maosun-dev.com/cookpop/player.html?v=m10e2igEArE" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="動画"></iframe>
-        </div>
+        <span class="memo memoC"><span class="dot"><svg viewBox="0 0 24 24"><path d="M6 4 L20 12 L6 20 Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></span>動画を流す</span>
+        <div class="media"><img src="https://i.ytimg.com/vi/m10e2igEArE/hqdefault.jpg" alt=""></div>
         <div class="name">チキンプルコギ</div>
         <div class="meta">Koh Kentetsu Kitchen　主菜</div>
         <div class="made">まだ作っていません</div>
         <div class="btns"><button class="btn main">作った！</button><button class="btn sub">別のにして</button></div>
-        <span class="open">YouTube で開く</span>
       </div>
     </div>
   </div>
