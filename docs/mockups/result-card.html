@@ -18,7 +18,7 @@
     background-size:28px 28px; padding:22px 16px; box-sizing:border-box; }
   .dish { text-align:center; font-size:30px; font-weight:900; color:var(--accent); margin:4px 0 14px; }
   /* レシピカード */
-  .card { background:#fff; padding:8px 8px 14px; box-shadow:0 3px 8px rgba(74,46,28,.13); position:relative; }
+  .card { background:#fff; padding:26px 8px 14px; box-shadow:0 3px 8px rgba(74,46,28,.13); position:relative; }
   .card::before { content:""; position:absolute; left:50%; top:-10px; width:64px; height:18px; margin-left:-32px; background:rgba(255,196,61,.8); transform:rotate(2deg); }
   .media { position:relative; aspect-ratio:16/9; background:#000; overflow:hidden; }
   .media img, .media iframe { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border:0; }
@@ -48,30 +48,19 @@
   .row1 { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:12px 4px 2px; }
   .row1 .name { margin:0; }
   .memoB { transform:rotate(2deg); flex-shrink:0; }
-  .memoC { position:absolute; right:-10px; top:-40px; transform:rotate(4deg); z-index:2; }
+  .memoC { position:absolute; right:-10px; top:-24px; transform:rotate(4deg); z-index:2; }
+
+  /* 料理名の長さで大きさを変える。3行まで */
+  .dish { margin:4px 0 26px; line-height:1.25; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+  .dish.m { font-size:24px; } .dish.s { font-size:20px; }
+  .card .name { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; line-height:1.35; }
 </style>
 </head>
 <body>
 <h1>結果カードの見本</h1>
-<p class="lead">写真には何も重ねず、再生マーク入りのメモを別の場所に貼る形。メモを押しても写真を押しても、写真の場所で動画が流れます。</p>
-<div class="pair">
-  <div class="col">
-    <h2>案1 名前の横にメモ</h2>
-    <div class="phone">
-      <div class="dish">チキンプルコギ</div>
-      <div class="card">
-        <div class="media"><img src="https://i.ytimg.com/vi/m10e2igEArE/hqdefault.jpg" alt=""></div>
-        <div class="row1"><div class="name">チキンプルコギ</div><span class="memo memoB"><span class="dot"><svg viewBox="0 0 24 24"><path d="M6 4 L20 12 L6 20 Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></span>動画を流す</span></div>
-        <div class="meta">Koh Kentetsu Kitchen　主菜</div>
-        <div class="made">まだ作っていません</div>
-        <div class="btns"><button class="btn main">作った！</button><button class="btn sub">別のにして</button></div>
-      </div>
-    </div>
-  </div>
-  <div class="col">
-    <h2>案2 カードの角にメモを貼る</h2>
-    <div class="phone">
-      <div class="dish">チキンプルコギ</div>
+<p class="lead">案2（カードの角にメモ）で、料理名の長さを変えたもの。上の料理名は長いほど小さくし、3行まで。カードの中の名前も3行まで。</p>
+<div class="pair"><div class="col"><h2>7文字</h2><div class="phone">
+      <div class="dish ">チキンプルコギ</div>
       <div class="card">
         <span class="memo memoC"><span class="dot"><svg viewBox="0 0 24 24"><path d="M6 4 L20 12 L6 20 Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></span>動画を流す</span>
         <div class="media"><img src="https://i.ytimg.com/vi/m10e2igEArE/hqdefault.jpg" alt=""></div>
@@ -79,9 +68,24 @@
         <div class="meta">Koh Kentetsu Kitchen　主菜</div>
         <div class="made">まだ作っていません</div>
         <div class="btns"><button class="btn main">作った！</button><button class="btn sub">別のにして</button></div>
-      </div>
-    </div>
-  </div>
-</div>
+      </div></div></div><div class="col"><h2>14文字</h2><div class="phone">
+      <div class="dish m">スパムとキムチごはんのお弁当</div>
+      <div class="card">
+        <span class="memo memoC"><span class="dot"><svg viewBox="0 0 24 24"><path d="M6 4 L20 12 L6 20 Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></span>動画を流す</span>
+        <div class="media"><img src="https://i.ytimg.com/vi/fsUZY-9V1TI/hqdefault.jpg" alt=""></div>
+        <div class="name">スパムとキムチごはんのお弁当</div>
+        <div class="meta">Koh Kentetsu Kitchen　主菜</div>
+        <div class="made">まだ作っていません</div>
+        <div class="btns"><button class="btn main">作った！</button><button class="btn sub">別のにして</button></div>
+      </div></div></div><div class="col"><h2>28文字</h2><div class="phone">
+      <div class="dish s">鶏むね肉とたっぷり野菜のしっとり甘辛炒め〜ごま油の香り〜</div>
+      <div class="card">
+        <span class="memo memoC"><span class="dot"><svg viewBox="0 0 24 24"><path d="M6 4 L20 12 L6 20 Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></span>動画を流す</span>
+        <div class="media"><img src="https://i.ytimg.com/vi/HMWVJFsgfQY/hqdefault.jpg" alt=""></div>
+        <div class="name">鶏むね肉とたっぷり野菜のしっとり甘辛炒め〜ごま油の香り〜</div>
+        <div class="meta">Koh Kentetsu Kitchen　主菜</div>
+        <div class="made">まだ作っていません</div>
+        <div class="btns"><button class="btn main">作った！</button><button class="btn sub">別のにして</button></div>
+      </div></div></div></div>
 </body>
 </html>
