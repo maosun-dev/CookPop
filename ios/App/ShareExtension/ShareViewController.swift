@@ -3,8 +3,10 @@ import UniformTypeIdentifiers
 
 // 共有の受け口（Share Extension）。
 // YouTube などの「共有」→「クックポップ」で呼ばれ、受け取ったリンクと文字を
-// アプリと共有の置き場（App Group）の UserDefaults に書いて、小さなカードを出して閉じる。
-// アプリ側は @capgo/capacitor-share-target が、アプリが前に出たときにここを読む。
+// アプリと共有の置き場（App Group）の UserDefaults に書いて、小さなカードを出す。
+// カードの「クックポップで開く」で cookpop://share を開くと、アプリがすぐ登録画面を開く。
+// アプリ側は @capgo/capacitor-share-target が、cookpop://share で開かれたときと
+// アプリが前に出たときにここを読む。
 class ShareViewController: UIViewController {
     // アプリと受け口で同じ名前にする（変えるとアプリが読めなくなる）
     private let appGroupId = "group.com.maosundev.cookpop"
@@ -16,6 +18,8 @@ class ShareViewController: UIViewController {
 
     // 閉じるのは一度だけ
     private var finished = false
+    // 置き場に書き込めたか（「クックポップで開く」はこれが済んでから）
+    private var saved = false
 
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
@@ -101,11 +105,17 @@ class ShareViewController: UIViewController {
     private func handle(title: String, texts: [String]) {
         let hasLink = texts.contains { $0.range(of: "https?://", options: [.regularExpression, .caseInsensitive]) != nil }
         if hasLink {
+            // 置き場への書き込みは、ボタンを出す前に済ませる（開いたアプリがすぐ読めるように）
             let payload: [String: Any] = ["title": title, "texts": texts, "files": [] as [Any]]
-            UserDefaults(suiteName: appGroupId)?.set(payload, forKey: storeKey)
-            showCard(heading: "クックポップに送りました", message: "アプリを開くと登録できます")
+            if let store = UserDefaults(suiteName: appGroupId) {
+                store.set(payload, forKey: storeKey)
+                saved = true
+            }
+            // 「クックポップで開く」を押すまで待つ（自動では閉じない）
+            showCard(heading: "クックポップに送りました", message: "このまま開いて登録できます", showOpen: saved)
+            if saved { return }
         } else {
-            showCard(heading: "YouTube のリンクが見つかりませんでした", message: "動画の「共有」から送ってください")
+            showCard(heading: "YouTube のリンクが見つかりませんでした", message: "動画の「共有」から送ってください", showOpen: false)
         }
         // 2.5 秒で自動で閉じる
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [weak self] in
@@ -113,8 +123,8 @@ class ShareViewController: UIViewController {
         }
     }
 
-    // 中央の小さなカード（見出し・説明・OK）
-    private func showCard(heading: String, message: String) {
+    // 中央の小さなカード（見出し・説明・「クックポップで開く」・OK）
+    private func showCard(heading: String, message: String, showOpen: Bool) {
         let card = UIView()
         card.backgroundColor = cardColor
         card.layer.cornerRadius = 22
@@ -140,14 +150,35 @@ class ShareViewController: UIViewController {
 
         let ok = UIButton(type: .system)
         ok.setTitle("OK", for: .normal)
-        ok.setTitleColor(cardColor, for: .normal)
         ok.titleLabel?.font = UIFont.systemFont(ofSize: 17, weight: .bold)
-        ok.backgroundColor = textColor
         ok.layer.cornerRadius = 14
         ok.addTarget(self, action: #selector(okTapped), for: .touchUpInside)
         ok.heightAnchor.constraint(equalToConstant: 46).isActive = true
 
-        let stack = UIStackView(arrangedSubviews: [headingLabel, messageLabel, ok])
+        var rows: [UIView] = [headingLabel, messageLabel]
+        if showOpen {
+            // 主なボタン：塗りつぶし。OK は枠だけの控えめなボタンにする
+            let openButton = UIButton(type: .system)
+            openButton.setTitle("クックポップで開く", for: .normal)
+            openButton.setTitleColor(cardColor, for: .normal)
+            openButton.titleLabel?.font = UIFont.systemFont(ofSize: 17, weight: .bold)
+            openButton.backgroundColor = textColor
+            openButton.layer.cornerRadius = 14
+            openButton.addTarget(self, action: #selector(openTapped), for: .touchUpInside)
+            openButton.heightAnchor.constraint(equalToConstant: 46).isActive = true
+            rows.append(openButton)
+
+            ok.setTitleColor(textColor, for: .normal)
+            ok.backgroundColor = .clear
+            ok.layer.borderWidth = 1.5
+            ok.layer.borderColor = textColor.withAlphaComponent(0.35).cgColor
+        } else {
+            ok.setTitleColor(cardColor, for: .normal)
+            ok.backgroundColor = textColor
+        }
+        rows.append(ok)
+
+        let stack = UIStackView(arrangedSubviews: rows)
         stack.axis = .vertical
         stack.spacing = 12
         stack.setCustomSpacing(20, after: messageLabel)
@@ -176,6 +207,35 @@ class ShareViewController: UIViewController {
 
     @objc private func okTapped() {
         finish()
+    }
+
+    // 「クックポップで開く」：書き込み済みを確かめてから cookpop://share を開き、受け口を閉じる。
+    // 開けなかったときも書き込みは残るので、次にアプリを開けば登録画面が出る。
+    @objc private func openTapped() {
+        guard !finished else { return }
+        if saved, let url = URL(string: "cookpop://share") {
+            _ = openHostApp(url)
+        }
+        finish()
+    }
+
+    // 受け口には正式な「アプリを開く」が無いので、画面部品の next をたどって UIApplication を探し、
+    // open(_:options:completionHandler:) を Objective-C の名前で呼ぶ
+    // （受け口ではアプリ本体の shared を使えず、open も直接は呼べないため）
+    private func openHostApp(_ url: URL) -> Bool {
+        let selector = NSSelectorFromString("openURL:options:completionHandler:")
+        var responder: UIResponder? = self
+        while let current = responder {
+            if let app = current as? UIApplication, app.responds(to: selector),
+               let imp = app.method(for: selector) {
+                typealias OpenFunc = @convention(c) (AnyObject, Selector, NSURL, NSDictionary, AnyObject?) -> Void
+                let callOpen = unsafeBitCast(imp, to: OpenFunc.self)
+                callOpen(app, selector, url as NSURL, NSDictionary(), nil)
+                return true
+            }
+            responder = current.next
+        }
+        return false
     }
 
     // 共有の画面を閉じる（一度だけ）

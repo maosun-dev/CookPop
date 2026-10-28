@@ -57,6 +57,26 @@ describe('iPhone の包み', () => {
     expect(s).toContain('"share-target-data"');
     expect(s).toContain('completeRequest');
   });
+  it('Info.plist：URL の呼び名 cookpop を登録している', () => {
+    const p = readFileSync('ios/App/App/Info.plist', 'utf8');
+    const t = p.match(/<key>CFBundleURLTypes<\/key>\s*<array>([\s\S]*?)<\/array>\s*(?=<key>)/)![1];
+    expect(t).toMatch(/<key>CFBundleURLName<\/key>\s*<string>com\.maosundev\.cookpop<\/string>/);
+    expect(t).toMatch(/<key>CFBundleURLSchemes<\/key>\s*<array>\s*<string>cookpop<\/string>\s*<\/array>/);
+  });
+  it('共有の受け口：「クックポップで開く」で cookpop://share を開く（書き込みのあと）', () => {
+    const s = readFileSync('ios/App/ShareExtension/ShareViewController.swift', 'utf8');
+    expect(s).toContain('クックポップで開く');
+    expect(s).toContain('"cookpop://share"');
+    // open(_:options:completionHandler:) を Objective-C の名前で呼ぶ
+    expect(s).toContain('"openURL:options:completionHandler:"');
+    expect(s).toMatch(/as\? UIApplication/);
+    expect(s).not.toContain('UIApplication.shared');
+    // 置き場への書き込みが、開く処理より前にある
+    const write = s.indexOf('.set(payload, forKey: storeKey)');
+    expect(write).toBeGreaterThan(-1);
+    expect(write).toBeLessThan(s.indexOf('"cookpop://share"'));
+    expect(write).toBeLessThan(s.indexOf('"openURL:options:completionHandler:"'));
+  });
   it('台本：背番号・ShareExtension・すでにあれば抜ける・埋め込み', () => {
     const r = readFileSync('tools/ios/add-share-extension.rb', 'utf8');
     expect(r).toContain('com.maosundev.cookpop.share');
