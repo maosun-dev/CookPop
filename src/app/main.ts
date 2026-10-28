@@ -80,6 +80,7 @@ async function boot(): Promise<void> {
   const settings = createSettingsScreen(state, {
     files,
     version: __APP_VERSION__,
+    openExternal,
     confirm: msg => window.confirm(msg),
     // 計画2ではブラウザの確認ダイアログを2段で使う
     confirmMode: async () => {

@@ -13,7 +13,12 @@ export interface SettingsDeps {
   version: string;
   /** 「消す」の確認。省略するとブラウザの確認ダイアログ */
   confirm?: (msg: string) => boolean;
+  /** 外のブラウザで開く（iPhone では差し替える）。無ければふつうのリンクとして開く */
+  openExternal?: (url: string) => void;
 }
+
+const PRIVACY_URL = 'https://maosun-dev.com/cookpop/privacy.html';
+const YOUTUBE_TERMS_URL = 'https://www.youtube.com/t/terms';
 
 const THEMES = [
   ['auto', '端末に合わせる'],
@@ -34,6 +39,16 @@ const TAG_ERRORS: Record<string, string> = {
 
 export function createSettingsScreen(state: AppState, deps: SettingsDeps): { el: HTMLElement; reset(): void } {
   const confirmFn = deps.confirm ?? ((m: string) => window.confirm(m));
+
+  /** 外で開くリンク。外で開く関数があればそちらに任せる（player.ts の「YouTube で開く」と同じ作り） */
+  const outLink = (text: string, url: string): HTMLElement => el('a', {
+    class: 'about-link', href: url, target: '_blank', rel: 'noopener',
+    onclick: (e: Event) => {
+      if (!deps.openExternal) return;
+      e.preventDefault();
+      deps.openExternal(url);
+    },
+  }, text);
 
   // ===== ふきんの色 =====
   const clothBtns = CLOTHS.map(cloth => ({
@@ -162,8 +177,9 @@ export function createSettingsScreen(state: AppState, deps: SettingsDeps): { el:
         el('h2', { class: 'section-title' }, 'このアプリについて'),
         el('p', { class: 'about-name' }, `クックポップ v${deps.version}`),
         el('p', { class: 'note' }, '動画は YouTube の公式プレーヤーで再生します。再生できない動画は「YouTube で開く」から開いてください。'),
+        el('p', { class: 'about-links' }, outLink('プライバシーポリシー', PRIVACY_URL), outLink('YouTube 利用規約', YOUTUBE_TERMS_URL)),
         el('p', { class: 'note' }, '文字：Zen Maru Gothic（SIL Open Font License）'),
-        el('p', { class: 'note' }, '部品：Capacitor（MIT）、capawesome File Picker（MIT）'),
+        el('p', { class: 'note' }, '部品：Capacitor（MIT）、capawesome File Picker（MIT）、AdMob（Google Mobile Ads SDK）'),
       ),
     ),
   );

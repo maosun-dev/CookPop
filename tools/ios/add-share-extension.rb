@@ -38,7 +38,7 @@ ext.build_configurations.each do |c|
   s['PRODUCT_NAME'] = '$(TARGET_NAME)'
   s['INFOPLIST_FILE'] = 'ShareExtension/Info.plist'
   s['CODE_SIGN_ENTITLEMENTS'] = 'ShareExtension/ShareExtension.entitlements'
-  s['MARKETING_VERSION'] = '0.1.0'
+  s['MARKETING_VERSION'] = '1.0.0'
   s['CURRENT_PROJECT_VERSION'] = '1'
   s['SWIFT_VERSION'] = '5.0'
   s['TARGETED_DEVICE_FAMILY'] = '1'

@@ -1,6 +1,6 @@
 {
   "name": "cookpop",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "クックポップ：登録した YouTube の料理動画から、マスコットのポンが今日の献立を決めてくれる",

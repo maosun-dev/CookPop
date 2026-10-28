@@ -28,9 +28,10 @@ describe('iPhone の包み', () => {
     expect(p).toContain('<key>SKAdNetworkItems</key>');
     expect(p).toContain('cstr6suwn9.skadnetwork');
   });
-  it('Xcode：版 0.1.0・ID・PrivacyInfo が Resources に入っている', () => {
+  it('Xcode：版 1.0.0・ID・PrivacyInfo が Resources に入っている', () => {
     const x = readFileSync('ios/App/App.xcodeproj/project.pbxproj', 'utf8');
-    expect(x).toMatch(/MARKETING_VERSION = 0\.1\.0;/);
+    expect(x).toMatch(/MARKETING_VERSION = 1\.0\.0;/);
+    expect(readFileSync('tools/ios/add-share-extension.rb', 'utf8')).toContain("'1.0.0'");
     expect(x).toMatch(/PRODUCT_BUNDLE_IDENTIFIER = com\.maosundev\.cookpop;/);
     expect((x.match(/PrivacyInfo\.xcprivacy/g) || []).length).toBeGreaterThanOrEqual(4);
     const pi = readFileSync('ios/App/App/PrivacyInfo.xcprivacy', 'utf8');

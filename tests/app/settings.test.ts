@@ -143,4 +143,22 @@ describe('設定：ふきんの色とマイタグ', () => {
     expect(state.data.settings.myTags).toEqual([]);
     expect(state.data.recipes[0].tags).toEqual([]);
   });
+  it('このアプリについてに、プライバシーポリシーと YouTube 利用規約のリンクがある', () => {
+    const state = createState(fake(), () => new Date(2026, 9, 23), () => 'x');
+    const scr = createSettingsScreen(state, { files: { saveText: async () => {}, pickText: async () => null }, confirmMode: async () => null, version: '1.0.0' });
+    const links = [...scr.el.querySelectorAll('a')].map(a => [a.textContent, a.getAttribute('href')]);
+    expect(links).toContainEqual(['プライバシーポリシー', 'https://maosun-dev.com/cookpop/privacy.html']);
+    expect(links).toContainEqual(['YouTube 利用規約', 'https://www.youtube.com/t/terms']);
+    expect(scr.el.textContent).toContain('AdMob');
+  });
+  it('openExternal があればそれで開く', () => {
+    const state = createState(fake(), () => new Date(2026, 9, 23), () => 'x');
+    const opened: string[] = [];
+    const scr = createSettingsScreen(state, { files: { saveText: async () => {}, pickText: async () => null }, confirmMode: async () => null, version: '1.0.0', openExternal: url => opened.push(url) });
+    const a = [...scr.el.querySelectorAll('a')].find(x => x.textContent === 'プライバシーポリシー')!;
+    const ev = new MouseEvent('click', { bubbles: true, cancelable: true });
+    a.dispatchEvent(ev);
+    expect(opened).toEqual(['https://maosun-dev.com/cookpop/privacy.html']);
+    expect(ev.defaultPrevented).toBe(true);
+  });
 });

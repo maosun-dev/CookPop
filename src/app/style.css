@@ -344,4 +344,8 @@ textarea.input { min-height: 88px; resize: vertical; }
 .check { flex: none; width: 24px; height: 24px; margin: 0; accent-color: var(--accent); cursor: pointer; }
 .note { font-size: var(--fs-2); color: var(--ink-soft); font-weight: 500; }
 .about-name { font-size: var(--fs-3); font-weight: 900; }
+/* 外で開くリンク：ハンコの色の下線。押しやすいよう高さ 44px */
+.about-links { display: flex; gap: 20px; flex-wrap: wrap; }
+.about-link { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); font-weight: 700; font-size: var(--fs-2);
+  text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 4px; }
 .sheet:focus { outline: none; }
