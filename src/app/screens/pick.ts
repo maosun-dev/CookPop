@@ -1,5 +1,5 @@
 // 「きめる」画面：ポンが今日の料理をルーレットで決める。
-import { el, clear } from '../ui';
+import { el, clear, svg } from '../ui';
 import { toast } from '../toast';
 import type { AppState } from '../state';
 import type { Mascot } from '../mascot/pon';
@@ -7,8 +7,9 @@ import { bellyLevel, fewRecipesLine, greeting, isFirstVisit, moodForHour, welcom
 import { thumbImg } from '../thumb';
 import { countOf, lastMade, monthCount } from '../../core/log';
 import { monthOf } from '../../core/date';
-import { pickMany, pickOne } from '../../core/picker';
-import { CATS, type Cat, type Recipe } from '../../core/recipe';
+import { filterRecipes, pickMany, pickOne } from '../../core/picker';
+import type { Recipe } from '../../core/recipe';
+import { createFilters } from '../filters';
 
 export interface PickDeps {
   rng: () => number;
@@ -18,6 +19,12 @@ export interface PickDeps {
   now: () => Date;
   /** 献立帳のタブへ移る（はじめましての案内のボタン用） */
   openBook?: () => void;
+}
+
+/** 上の大きな料理名の大きさ。8文字までは大きく、15文字までは一段小さく、それより長いともう一段小さく */
+export function dishSize(name: string): '' | 'm' | 's' {
+  const len = Array.from(name).length;
+  return len <= 8 ? '' : len <= 15 ? 'm' : 's';
 }
 
 const SPIN_TICKS = 16;
@@ -38,7 +45,6 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
   const { mascot, rng } = deps;
 
   // 画面の状態
-  let cat: Cat | null = null; // null はすべて
   let favOnly = false;
   let pickThree = false;
   let spinning = false;
@@ -47,27 +53,31 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
   let lastCount = state.data.recipes.length;
   let rolled = false; // この起動で「きめて！」を押したか（はじめましての案内は、その起動で1回だけ。保存しない）
 
-  const dish = el('div', { class: 'dish', 'aria-live': 'polite' }, '？'); // 回している間は読み上げない
+  const dishText = el('span', { class: 'dish-text' }, '？');
+  const dish = el('div', { class: 'dish', 'aria-live': 'polite' }, dishText); // 回している間は読み上げない
+  /** 上の料理名を入れ替える。長さに合わせて大きさのクラスも替える */
+  function setDish(name: string): void {
+    dishText.textContent = name;
+    dish.classList.remove('m', 's');
+    const size = dishSize(name);
+    if (size) dish.classList.add(size);
+  }
   const empty = el('p', { class: 'muted empty' });
   const choices = el('div', { class: 'choices' });
   const resultHost = el('div', { class: 'result-host' });
-  const rollBtn = el('button', { class: 'btn btn-yolk btn-big pop pop-press', id: 'roll', type: 'button', onclick: () => roll([]) }, 'きめて！');
+  const rollBtn = el('button', { class: 'stamp pop-press', id: 'roll', type: 'button', onclick: () => roll([]) }, 'きめて！');
 
-  // チップは1度だけ作り、押した状態だけ更新する（フォーカスを保つため）
+  // 2段の絞り込み（ジャンル・マイタグ）。チップは1度だけ作り、押した状態だけ更新する
+  const filters = createFilters(state, () => paintControls());
   function makeChip(label: string, onClick: () => void): HTMLElement {
     return el('button', { class: 'chip', type: 'button', 'aria-pressed': 'false', onclick: onClick }, label);
   }
-  const catChipList: Array<{ cat: Cat | null; node: HTMLElement }> = [
-    { cat: null, node: makeChip('すべて', () => { cat = null; paintControls(); }) },
-    ...CATS.map(c => ({ cat: c as Cat | null, node: makeChip(c, () => { cat = c; paintControls(); }) })),
-  ];
   const favChip = makeChip('お気に入りだけ', () => { favOnly = !favOnly; paintControls(); });
   const threeChip = makeChip('3つから選ぶ', () => { pickThree = !pickThree; paintControls(); });
-  const catChips = el('div', { class: 'chips', role: 'group', 'aria-label': 'ジャンル' }, ...catChipList.map(c => c.node));
   const modeChips = el('div', { class: 'chips', role: 'group', 'aria-label': 'えらびかた' }, favChip, threeChip);
 
   function candidates(): Recipe[] {
-    return state.data.recipes.filter(r => (cat === null || r.cat === cat) && (!favOnly || r.fav));
+    return filterRecipes(state.data.recipes, { cat: filters.cat(), tag: filters.tag(), favOnly });
   }
 
   function findRecipe(id: string): Recipe | undefined {
@@ -104,14 +114,14 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
   /** チップの押した状態・ボタンの無効・空の案内を更新する（作り直さない） */
   function paintControls(): void {
     const list = candidates();
-    for (const c of catChipList) c.node.setAttribute('aria-pressed', cat === c.cat ? 'true' : 'false');
     favChip.setAttribute('aria-pressed', favOnly ? 'true' : 'false');
     threeChip.setAttribute('aria-pressed', pickThree ? 'true' : 'false');
     rollBtn.disabled = spinning || list.length === 0;
     if (list.length === 0) {
       empty.textContent = state.data.recipes.length === 0
         ? 'まだ登録がありません。献立帳で足してね'
-        : favOnly && cat === null ? 'お気に入りがまだ登録されていません' : 'このジャンルはまだ登録がありません';
+        : favOnly && filters.cat() === null && filters.tag() === null ? 'お気に入りがまだ登録されていません'
+        : filters.tag() === null && !favOnly ? 'このジャンルはまだ登録がありません' : 'この条件の料理はまだ登録がありません';
     } else {
       empty.textContent = '';
     }
@@ -128,8 +138,14 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
   let view: ResultView | null = null;
 
   function buildResult(id: string): HTMLElement {
-    const player = el('div', { class: 'player' });
+    // 写真の入れ物。押すと、この入れ物の中身が動画のプレーヤー（と下の「YouTube で開く」）に替わる
+    const mediaHost = el('div', { class: 'media-host' });
     const thumbHost = el('div', { class: 'thumb-host' });
+    const play = (): void => {
+      if (mediaHost.querySelector('.player')) return; // もう動画に替わっている
+      watch(id, mediaHost);
+    };
+    mediaHost.append(el('button', { class: 'media', type: 'button', 'aria-label': '動画を流す', onclick: play }, thumbHost));
     const title = el('h2', { class: 'card-title' });
     const meta = el('p', { class: 'muted' });
     const memo = el('p', { class: 'memo' });
@@ -137,7 +153,14 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
     const card = el(
       'article',
       { class: 'card pop result rise' },
-      thumbHost,
+      // 右上の角のメモ。写真にも名前にも重ならない（カードの上の余白に貼る）
+      el(
+        'button',
+        { class: 'play-memo', type: 'button', onclick: play },
+        el('span', { class: 'play-dot', 'aria-hidden': 'true' }, svg('<svg viewBox="0 0 24 24"><path d="M6 4 L20 12 L6 20 Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>')),
+        '動画を流す',
+      ),
+      mediaHost,
       el(
         'div',
         { class: 'card-body stack' },
@@ -150,9 +173,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
           { class: 'row' },
           el('button', { class: 'btn btn-leaf pop pop-press', type: 'button', onclick: () => cooked(id) }, '作った！'),
           el('button', { class: 'btn pop pop-press', type: 'button', onclick: () => another(id) }, '別のにして'),
-          el('button', { class: 'btn pop pop-press', type: 'button', onclick: () => watch(id, player) }, '動画を見る'),
         ),
-        player,
       ),
     );
     view = { thumbHost, title, meta, memo, count };
@@ -198,7 +219,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
   function decide(recipe: Recipe): void {
     currentId = recipe.id;
     choiceIds = [];
-    dish.textContent = recipe.name;
+    setDish(recipe.name);
     clear(choices);
     showResult(recipe);
     mascot.setMood('decided');
@@ -259,7 +280,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
     if (pickThree && candidates().length > 1) {
       clearResult();
       currentId = null;
-      dish.textContent = '？';
+      setDish('？');
       const input = base();
       // 候補が3つ以下なら、除外すると3枚に満たないので除外しない
       if (input.recipes.length <= 3) input.exclude = [];
@@ -279,7 +300,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
       if (picked) {
         decide(picked);
       } else {
-        dish.textContent = '？';
+        setDish('？');
         idleMascot();
       }
     };
@@ -298,7 +319,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
         return;
       }
       const list = candidates();
-      if (list.length > 0) dish.textContent = list[Math.floor(rng() * list.length) % list.length].name;
+      if (list.length > 0) setDish(list[Math.floor(rng() * list.length) % list.length].name);
       tick++;
       setTimeout(step, wait);
       wait *= SPIN_SLOWDOWN;
@@ -308,6 +329,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
 
   // データが変わったら更新する。結果カードは残す（消された料理なら消す）
   state.subscribe(() => {
+    filters.sync(); // 選んだタグの名前が変わった・消えた、を追いかける
     paintControls();
     paintBelly();
     const count = state.data.recipes.length;
@@ -322,7 +344,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
       } else {
         currentId = null;
         clearResult();
-        if (!spinning) dish.textContent = '？';
+        if (!spinning) setDish('？');
       }
     }
     // 3枚から選ぶで、消された料理のカードは除く
@@ -353,7 +375,7 @@ export function createPickScreen(state: AppState, deps: PickDeps): { el: HTMLEle
     el('h1', { class: 'sr-only' }, 'きめる'),
     mascot.el,
     el('div', { class: 'stage' }, dish, rollBtn, empty),
-    el('div', { class: 'stack filters' }, catChips, modeChips),
+    el('div', { class: 'stack filters' }, filters.catRow, filters.tagRow, modeChips),
     choices,
     resultHost,
   );

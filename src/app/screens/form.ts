@@ -4,6 +4,7 @@ import { toast } from '../toast';
 import type { AppState } from '../state';
 import { CATS, findByVideoId, parseVideoId, type Cat } from '../../core/recipe';
 import { fetchMeta, type FetchJson } from '../../core/oembed';
+import { TAGS_PER_RECIPE } from '../../core/tags';
 
 export interface FormDeps {
   fetchJson: FetchJson;
@@ -18,6 +19,9 @@ export function createForm(state: AppState, deps: FormDeps): { el: HTMLElement; 
   const editing = deps.prefill?.recipeId ? state.data.recipes.find(r => r.id === deps.prefill?.recipeId) : undefined;
 
   let cat: Cat = editing?.cat ?? '主菜';
+  /** この料理に付けるマイタグ */
+  let selectedTags: string[] = editing ? [...editing.tags] : [];
+  let tagMaking = false; // 「＋ タグを作る」の小さな欄を開いているか
   /** 取ってきたサムネイル。どの動画のものかも覚えておく */
   let thumb = '';
   let thumbFor = '';
@@ -109,6 +113,71 @@ export function createForm(state: AppState, deps: FormDeps): { el: HTMLElement; 
   }
   drawCats();
 
+  // マイタグ：作ったタグのチップ（押して付け外し）と「＋ タグを作る」
+  const tagChips = el('div', { class: 'chips', role: 'group', 'aria-label': 'マイタグ' });
+  const tagErr = el('p', { class: 'err', role: 'alert' });
+  function drawTags(): void {
+    clear(tagChips);
+    for (const t of state.data.settings.myTags) {
+      const on = selectedTags.includes(t);
+      tagChips.append(el('button', {
+        class: 'chip', type: 'button', 'aria-pressed': String(on),
+        onclick: () => {
+          if (on) {
+            selectedTags = selectedTags.filter(x => x !== t);
+            tagErr.textContent = '';
+          } else if (selectedTags.length >= TAGS_PER_RECIPE) {
+            tagErr.textContent = `1品に付けられるのは${TAGS_PER_RECIPE}個までだよ`;
+            return;
+          } else {
+            selectedTags = [...selectedTags, t];
+            tagErr.textContent = '';
+          }
+          drawTags();
+        },
+      }, t));
+    }
+    if (!tagMaking) {
+      tagChips.append(el('button', { class: 'chip chip-add', type: 'button', onclick: () => { tagMaking = true; tagErr.textContent = ''; drawTags(); } }, '＋ タグを作る'));
+    }
+    drawMaker();
+  }
+  const tagMaker = el('div', { class: 'tag-maker row' });
+  function makeTag(box: HTMLInputElement): void {
+    const name = box.value.trim();
+    const res = state.addTag(name);
+    if (res === 'ok') {
+      if (selectedTags.length < TAGS_PER_RECIPE) selectedTags = [...selectedTags, name];
+      tagMaking = false;
+      tagErr.textContent = '';
+      drawTags();
+      return;
+    }
+    tagErr.textContent = res === 'long' ? '12文字までにしてね'
+      : res === 'dup' ? 'もうあるよ'
+      : res === 'full' ? '20個までだよ'
+      : 'タグの名前を入れてね';
+  }
+  function drawMaker(): void {
+    tagMaker.hidden = !tagMaking;
+    // 開いたまま・閉じたままのときは作り直さない（打ちかけの文字を消さないため）
+    if (tagMaking === (tagMaker.childElementCount > 0)) return;
+    clear(tagMaker);
+    if (!tagMaking) return;
+    const box = el('input', { class: 'input', name: 'newTag', type: 'text', autocomplete: 'off', placeholder: 'タグの名前（12文字まで）' });
+    // 小さな欄で Enter を押しても、料理の登録は進めず、タグを作るだけにする
+    box.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); makeTag(box); }
+    });
+    tagMaker.append(
+      box,
+      el('button', { class: 'btn btn-yolk pop-press', type: 'button', onclick: () => makeTag(box) }, '作る'),
+      el('button', { class: 'btn btn-quiet', type: 'button', onclick: () => { tagMaking = false; tagErr.textContent = ''; drawTags(); } }, 'やめる'),
+    );
+    box.focus?.();
+  }
+  drawTags();
+
   const field = (label: string, control: HTMLElement) => el('label', { class: 'field' }, el('span', {}, label), control);
 
   function submit(e: Event): void {
@@ -118,6 +187,7 @@ export function createForm(state: AppState, deps: FormDeps): { el: HTMLElement; 
       if (!name) { showError('料理の名前を入れてください'); return; }
       const ok = state.updateRecipe(editing.id, { name, cat, channel: channelInput.value.trim(), memo: memoInput.value.trim() });
       if (!ok) { showError('料理の名前を入れてください'); return; }
+      state.setRecipeTags(editing.id, selectedTags);
       toast('保存しました');
       deps.onDone();
       return;
@@ -132,6 +202,7 @@ export function createForm(state: AppState, deps: FormDeps): { el: HTMLElement; 
       channel: channelInput.value.trim(),
       thumb: thumbFor === videoId ? thumb : '',
       memo: memoInput.value.trim(),
+      tags: selectedTags,
     });
     if (res.ok) {
       toast(`「${res.recipe.name}」を登録しました`);
@@ -179,9 +250,10 @@ export function createForm(state: AppState, deps: FormDeps): { el: HTMLElement; 
     hint,
     field('料理の名前', nameInput),
     el('div', { class: 'field' }, el('span', {}, 'ジャンル'), catChips),
+    el('div', { class: 'field' }, el('span', {}, 'マイタグ'), tagChips, tagMaker, tagErr),
     field('チャンネル名（なくてもOK）', channelInput),
     field('メモ', memoInput),
-    el('button', { class: 'btn btn-yolk btn-big pop pop-press', type: 'submit' }, editing ? '保存する' : '登録する'),
+    el('button', { class: 'btn btn-yolk btn-big pop-press', type: 'submit' }, editing ? '保存する' : '登録する'),
   );
   root.append(form);
 

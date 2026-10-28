@@ -57,11 +57,56 @@ describe('きめる画面', () => {
     expect(scr.el.querySelector('.result')).not.toBeNull();
     expect(scr.el.querySelector('.dish')!.textContent).toBe(cards[1].textContent);
   });
-  it('動画を見る で openPlayer が呼ばれる', () => {
+  it('結果カードに「動画を見る」ボタンは無く、メモも写真も押すと openPlayer が呼ばれる', () => {
     const { scr, opened } = setup();
     (scr.el.querySelector('#roll') as HTMLButtonElement).click();
-    ([...scr.el.querySelectorAll('.result button')].find(b => b.textContent === '動画を見る') as HTMLElement).click();
+    expect([...scr.el.querySelectorAll('.result button')].some(b => b.textContent === '動画を見る')).toBe(false);
+    const memo = scr.el.querySelector('.result .play-memo') as HTMLElement;
+    expect(memo.textContent).toContain('動画を流す');
+    memo.click();
     expect(opened).toEqual(['HzLAMA5ck_8']);
+    // 写真の場所（入れ物）が渡る。写真には何も重ねない
+    const photo = scr.el.querySelector('.result .media') as HTMLElement;
+    expect(photo.querySelector('.play-memo')).toBeNull();
+  });
+  it('写真を押しても openPlayer が呼ばれる。入れ物はカードの中', () => {
+    const hosts: HTMLElement[] = [];
+    Object.defineProperty(window, 'matchMedia', { writable: true, value: () => ({ matches: true, addEventListener() {}, removeEventListener() {} }) });
+    const state = createState(fake(), () => new Date(2026, 9, 23, 19), () => 'x');
+    const scr = createPickScreen(state, { rng: () => 0, mascot: createMascot(), openPlayer: (h) => { hosts.push(h); }, now: () => new Date(2026, 9, 23, 19) });
+    document.body.append(scr.el);
+    (scr.el.querySelector('#roll') as HTMLButtonElement).click();
+    (scr.el.querySelector('.result .media') as HTMLElement).click();
+    expect(hosts).toHaveLength(1);
+    expect(scr.el.querySelector('.result')!.contains(hosts[0])).toBe(true);
+    expect(hosts[0].contains(scr.el.querySelector('.result .media'))).toBe(true);
+  });
+  it('「きめて！」は丸いハンコ', () => {
+    const { scr } = setup();
+    const roll = scr.el.querySelector('#roll')!;
+    expect(roll.classList.contains('stamp')).toBe(true);
+    expect(roll.classList.contains('btn-big')).toBe(false);
+  });
+  it('料理名の長さで大きさのクラスが変わる（8文字まで大・15文字まで中・それより長いと小）', () => {
+    const { scr, state } = setup();
+    const dish = scr.el.querySelector('.dish') as HTMLElement;
+    const run = (name: string) => {
+      for (const r of [...state.data.recipes]) state.deleteRecipe(r.id);
+      state.addRecipe({ url: 'https://youtu.be/AAAAAAAAAAA', name, cat: '主菜', channel: '', thumb: '', memo: '' });
+      (scr.el.querySelector('#roll') as HTMLButtonElement).click();
+    };
+    run('あ'.repeat(8));
+    expect(dish.classList.contains('m') || dish.classList.contains('s')).toBe(false);
+    run('あ'.repeat(9));
+    expect(dish.classList.contains('m')).toBe(true);
+    run('あ'.repeat(15));
+    expect(dish.classList.contains('m')).toBe(true);
+    run('あ'.repeat(16));
+    expect(dish.classList.contains('s')).toBe(true);
+    expect(dish.classList.contains('m')).toBe(false);
+    expect(dish.textContent).toBe('あ'.repeat(16));
+    // カードの中の名前にも大きさのクラスは付かない（3行までは CSS で）
+    expect(scr.el.querySelector('.result .card-title')!.textContent).toBe('あ'.repeat(16));
   });
   it('登録が0品なら案内が出る', () => {
     const { scr, state, mascot } = setup();
@@ -125,8 +170,8 @@ describe('きめる画面', () => {
     const { scr } = setup();
     (scr.el.querySelector('#roll') as HTMLButtonElement).click();
     const buttons = [...scr.el.querySelectorAll('.result button')] as HTMLButtonElement[];
-    buttons.find(b => b.textContent === '動画を見る')!.click();
-    const player = scr.el.querySelector('.result .player') as HTMLElement;
+    (scr.el.querySelector('.result .play-memo') as HTMLElement).click();
+    const player = scr.el.querySelector('.result .media-host') as HTMLElement;
     player.append(document.createElement('iframe')); // 枠に印を付ける
     const card = scr.el.querySelector('.result')!;
     const cookedBtn = buttons.find(b => b.textContent === '作った！')!;
@@ -134,7 +179,7 @@ describe('きめる画面', () => {
     cookedBtn.click();
     expect(scr.el.querySelector('.result .count')!.textContent).toContain('作った回数 1回');
     expect(scr.el.querySelector('.result')).toBe(card);
-    expect(scr.el.querySelector('.result .player')).toBe(player);
+    expect(scr.el.querySelector('.result .media-host')).toBe(player);
     expect(player.querySelector('iframe')).not.toBeNull();
     expect(cookedBtn.isConnected).toBe(true);
     expect(document.activeElement).toBe(cookedBtn);
@@ -215,5 +260,62 @@ describe('きめる画面', () => {
     const { scr } = setup();
     const dish = scr.el.querySelector('.dish')!;
     expect(dish.getAttribute('aria-live')).toBe('polite');
+  });
+});
+
+describe('きめる画面：2段の絞り込み', () => {
+  const chipOf = (root: Element, group: string, text: string) =>
+    [...root.querySelectorAll(`[aria-label="${group}"] .chip`)].find(c => c.textContent === text) as HTMLElement;
+  function withTags() {
+    const s = setup();
+    s.state.addTag('お弁当');
+    s.state.addTag('作り置き');
+    const [a, b, c] = s.state.data.recipes;
+    s.state.setRecipeTags(a.id, ['お弁当']);
+    s.state.setRecipeTags(b.id, ['お弁当', '作り置き']);
+    s.state.setRecipeTags(s.state.data.recipes[6].id, ['お弁当']); // ご飯
+    void c;
+    return s;
+  }
+  it('マイタグが 0 個ならタグの段は隠れる。作ると出る', () => {
+    const { scr, state } = setup();
+    expect((scr.el.querySelector('[aria-label="マイタグ"]') as HTMLElement).hidden).toBe(true);
+    expect(scr.el.querySelector('[aria-label="ジャンル"]')).not.toBeNull();
+    state.addTag('お弁当');
+    const row = scr.el.querySelector('[aria-label="マイタグ"]') as HTMLElement;
+    expect(row.hidden).toBe(false);
+    expect([...row.querySelectorAll('.chip')].map(c => c.textContent)).toEqual(['すべて', 'お弁当']);
+  });
+  it('ジャンルとタグは「かつ」で絞る', () => {
+    const { scr, state } = withTags();
+    chipOf(scr.el, 'マイタグ', 'お弁当').click();
+    expect(chipOf(scr.el, 'マイタグ', 'お弁当').getAttribute('aria-pressed')).toBe('true');
+    const seen = new Set<string>();
+    const rollAll = () => { (scr.el.querySelector('#roll') as HTMLButtonElement).click(); seen.add(scr.el.querySelector('.card-title')!.textContent!); };
+    rollAll();
+    // お弁当が付いた3品のどれか
+    const tagged = state.data.recipes.filter(r => r.tags.includes('お弁当')).map(r => r.name);
+    expect(tagged).toContain([...seen][0]);
+    chipOf(scr.el, 'ジャンル', 'ご飯').click();
+    rollAll();
+    expect(scr.el.querySelector('.card-title')!.textContent).toBe('スパムとキムチごはんのお弁当');
+    chipOf(scr.el, 'ジャンル', '麺').click(); // 麺×お弁当は 0 品
+    expect((scr.el.querySelector('#roll') as HTMLButtonElement).disabled).toBe(true);
+  });
+  it('選んだタグの名前を変えても選んだまま。消すと「すべて」に戻る', () => {
+    const { scr, state } = withTags();
+    chipOf(scr.el, 'マイタグ', '作り置き').click();
+    state.renameTag('作り置き', '常備菜');
+    expect(chipOf(scr.el, 'マイタグ', '常備菜').getAttribute('aria-pressed')).toBe('true');
+    expect(chipOf(scr.el, 'マイタグ', 'すべて').getAttribute('aria-pressed')).toBe('false');
+    state.deleteTag('常備菜');
+    expect(chipOf(scr.el, 'マイタグ', 'すべて').getAttribute('aria-pressed')).toBe('true');
+    expect((scr.el.querySelector('#roll') as HTMLButtonElement).disabled).toBe(false);
+  });
+  it('選んでいない別のタグが消えても、選びは変わらない', () => {
+    const { scr, state } = withTags();
+    chipOf(scr.el, 'マイタグ', 'お弁当').click();
+    state.deleteTag('作り置き');
+    expect(chipOf(scr.el, 'マイタグ', 'お弁当').getAttribute('aria-pressed')).toBe('true');
   });
 });

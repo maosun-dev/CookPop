@@ -120,3 +120,48 @@ describe('献立帳：設定のボタン', () => {
     expect(scr2.el.querySelector('button[aria-label="設定"]')).toBeNull();
   });
 });
+
+describe('献立帳：2段の絞り込みとタグの札', () => {
+  const chipOf = (root: Element, group: string, text: string) =>
+    [...root.querySelectorAll(`[aria-label="${group}"] .chip`)].find(c => c.textContent === text) as HTMLElement;
+  it('マイタグが 0 個ならタグの段は隠れる。ジャンル×タグの「かつ」で絞れる', () => {
+    const { scr, state } = setup();
+    expect((scr.el.querySelector('[aria-label="マイタグ"]') as HTMLElement).hidden).toBe(true);
+    state.addTag('お弁当');
+    const [a, b] = state.data.recipes;
+    state.setRecipeTags(a.id, ['お弁当']);
+    state.setRecipeTags(b.id, ['お弁当']);
+    chipOf(scr.el, 'マイタグ', 'お弁当').click();
+    expect(scr.el.querySelectorAll('.tile')).toHaveLength(2);
+    chipOf(scr.el, 'ジャンル', '主菜').click();
+    expect(scr.el.querySelectorAll('.tile')).toHaveLength(2);
+    chipOf(scr.el, 'ジャンル', '麺').click();
+    expect(scr.el.querySelectorAll('.tile')).toHaveLength(0);
+  });
+  it('タグの名前を変えると選んだまま、消すと「すべて」に戻って全部出る', () => {
+    const { scr, state } = setup();
+    state.addTag('お弁当');
+    state.setRecipeTags(state.data.recipes[0].id, ['お弁当']);
+    chipOf(scr.el, 'マイタグ', 'お弁当').click();
+    expect(scr.el.querySelectorAll('.tile')).toHaveLength(1);
+    state.renameTag('お弁当', '弁当');
+    expect(chipOf(scr.el, 'マイタグ', '弁当').getAttribute('aria-pressed')).toBe('true');
+    expect(scr.el.querySelectorAll('.tile')).toHaveLength(1);
+    state.deleteTag('弁当');
+    expect((scr.el.querySelector('[aria-label="マイタグ"]') as HTMLElement).hidden).toBe(true);
+    expect(scr.el.querySelectorAll('.tile')).toHaveLength(8);
+  });
+  it('カードにジャンルの札とマイタグの札。3つまで出して残りは +n', () => {
+    const { scr, state } = setup();
+    for (const t of ['あ', 'い', 'う', 'え', 'お']) state.addTag(t);
+    const id = state.data.recipes[0].id;
+    state.setRecipeTags(id, ['あ', 'い', 'う', 'え', 'お']);
+    const tile = scr.el.querySelector('.tile')!;
+    expect(tile.querySelector('.tag:not(.tag-my)')!.textContent).toBe('主菜');
+    expect([...tile.querySelectorAll('.tag-my')].map(t => t.textContent)).toEqual(['あ', 'い', 'う', '+2']);
+  });
+  it('見出しは白いメモ（テープ付き）', () => {
+    const { scr } = setup();
+    expect(scr.el.querySelector('h1.screen-title')!.classList.contains('tape')).toBe(true);
+  });
+});

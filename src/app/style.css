@@ -10,6 +10,7 @@
   --ink: #4A2E1C;        /* 文字（こげ茶） */
   --ink-soft: #8A6A55;   /* 補足の文字 */
   --shadow: 0 2px 5px rgba(74, 46, 28, .12);
+  --tag-ink: var(--accent-deep); /* 札の文字。暗い見た目では --ink に替わる */
   --on-accent: #FFFFFF;  /* ハンコの色の上に載せる文字 */
   /* 古い名前：役目ごとの色は全部ハンコの色にそろえる */
   --cream: var(--base);
@@ -32,13 +33,13 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --base: #2A1D14; --paper: #3A2A1E; --ink: #FFF1DC; --ink-soft: #C9B4A3; --gingham-a: .10;
-    --shadow: 0 2px 5px rgba(0, 0, 0, .35);
+    --shadow: 0 2px 5px rgba(0, 0, 0, .35); --tag-ink: var(--ink);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --base: #2A1D14; --paper: #3A2A1E; --ink: #FFF1DC; --ink-soft: #C9B4A3; --gingham-a: .10;
-  --shadow: 0 2px 5px rgba(0, 0, 0, .35);
+  --shadow: 0 2px 5px rgba(0, 0, 0, .35); --tag-ink: var(--ink);
   color-scheme: dark;
 }
 *, *::before, *::after { box-sizing: border-box; }
@@ -74,7 +75,7 @@ h1, h2, h3, p { margin: 0; }
 /* 白い台紙：輪郭線なし、うすい影だけ。押すと少し沈む */
 .pop {
   background: var(--paper); border: 0; border-radius: var(--r-md);
-  box-shadow: 0 2px 5px rgba(74,46,28,.12);
+  box-shadow: var(--shadow);
 }
 .pop-press { cursor: pointer; transition: transform .08s; }
 .pop-press:active { transform: translateY(1px); }
@@ -88,7 +89,11 @@ h1, h2, h3, p { margin: 0; }
 /* ハンコ：丸い、-6度、下にかげ（きめて！に使う） */
 .stamp { width: 140px; height: 140px; padding: 0; border-radius: 50%; background: var(--accent); color: var(--on-accent);
   font-size: var(--fs-5); font-weight: 900; transform: rotate(-6deg);
-  box-shadow: inset 0 0 0 6px var(--accent), inset 0 0 0 9px rgba(255, 255, 255, .85), 0 4px 0 var(--accent-deep); }
+  box-shadow: inset 0 0 0 6px var(--accent), inset 0 0 0 9px rgba(255, 255, 255, .85), 0 4px 0 var(--accent-deep);
+  border: 0; cursor: pointer; }
+/* .pop-press の沈み方は傾きを消してしまうので、ハンコは傾けたまま沈める */
+.stamp.pop-press:active { transform: rotate(-6deg) translateY(2px); box-shadow: inset 0 0 0 6px var(--accent), inset 0 0 0 9px rgba(255, 255, 255, .85), 0 2px 0 var(--accent-deep); }
+.stamp.pop-press:disabled { transform: rotate(-6deg); }
 
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px;
   padding: 8px 18px; border-radius: 8px; font-weight: 700; font-size: var(--fs-3); }
@@ -154,12 +159,12 @@ textarea.input { min-height: 88px; resize: vertical; }
 
 /* 設定の中身 */
 .settings-sheet .section-title { display: inline-block; justify-self: start; }
-.cloth-row { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.cloth-row { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
 .cloth-btn { display: grid; justify-items: center; gap: 4px; min-height: 44px; padding: 2px 0 0; border: 0; background: transparent;
   font-size: 11px; font-weight: 700; color: var(--ink); cursor: pointer; }
-.cloth-swatch { width: 44px; height: 44px; border-radius: 50%; background-color: #FFF8EC;
+.cloth-swatch { width: 40px; height: 40px; border-radius: 50%; background-color: #FFF8EC;
   background-image: linear-gradient(90deg, rgba(var(--cloth-rgb), .55) 50%, transparent 50%), linear-gradient(rgba(var(--cloth-rgb), .55) 50%, transparent 50%);
-  background-size: 11px 11px; box-shadow: 0 2px 5px rgba(74, 46, 28, .12); }
+  background-size: 10px 10px; box-shadow: var(--shadow); }
 .cloth-btn[aria-pressed="true"] .cloth-swatch { box-shadow: 0 0 0 3px var(--base), 0 0 0 6px var(--accent); }
 .cloth-btn[aria-pressed="true"] .cloth-name { color: var(--accent); }
 .tag-list { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
@@ -184,8 +189,13 @@ textarea.input { min-height: 88px; resize: vertical; }
 .bubble .btn { min-height: 44px; padding: 4px 14px; font-size: var(--fs-2); }
 
 .stage { display: grid; justify-items: center; gap: 12px; }
-.dish { width: 100%; font-size: var(--fs-6); font-weight: 900; text-align: center; line-height: 1.25; min-height: 2.4em;
-  display: grid; place-items: center; word-break: break-all; overflow-wrap: anywhere; }
+/* 上の大きな料理名：8文字までは大きく、15文字までは24px、それより長いと20px。3行まで */
+.dish { width: 100%; font-size: var(--fs-6); font-weight: 900; color: var(--accent); text-align: center; line-height: 1.25; min-height: 100px;
+  display: grid; place-items: center; }
+.dish.m { font-size: 24px; min-height: 60px; }
+.dish.s { font-size: 20px; min-height: 50px; }
+.dish-text { display: -webkit-box; max-width: 100%; overflow: hidden; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical;
+  word-break: break-all; overflow-wrap: anywhere; }
 .empty:empty { display: none; }
 
 .card { overflow: hidden; border-radius: var(--r-sm); }
@@ -196,7 +206,9 @@ textarea.input { min-height: 88px; resize: vertical; }
 .thumb-fallback svg { width: 48px; height: 48px; }
 .choice .thumb-fallback { aspect-ratio: 16 / 10; }
 .card-body { padding: 14px 16px 16px; }
-.card-title { font-size: var(--fs-4); font-weight: 900; line-height: 1.3; }
+.card-title { font-size: var(--fs-4); font-weight: 900; line-height: 1.35; }
+/* 結果カードの中の名前も3行まで */
+.result .card-title { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
 .memo { white-space: pre-wrap; }
 .count { font-weight: 700; }
 .player:empty { display: none; }
@@ -209,6 +221,25 @@ textarea.input { min-height: 88px; resize: vertical; }
   background: var(--paper); }
 .player-msg { font-weight: 700; }
 .player-open { display: inline-block; margin-top: 8px; }
+/* 結果カード：上の余白26pxに「動画を流す」のメモを貼る（写真にも名前にも重ねない）。カードもテープもまっすぐ */
+.card.result { position: relative; overflow: visible; margin-top: 22px; padding: 26px 8px 14px; }
+.card.result::before { content: ""; position: absolute; left: 28px; top: -10px; width: 64px; height: 18px;
+  background: rgba(var(--cloth-rgb), .8); transform: rotate(-2deg); pointer-events: none; }
+.result .card-body { padding: 12px 4px 0; }
+.media-host { display: block; }
+.media { position: relative; display: block; width: 100%; padding: 0; border: 0; border-radius: 0; overflow: hidden;
+  aspect-ratio: 16 / 9; background: var(--base); cursor: pointer; }
+.media img, .media .thumb-fallback { position: absolute; inset: 0; width: 100%; height: 100%; }
+.media-host .player.pop { border-radius: 0; box-shadow: none; }
+.result .player-open { display: block; margin: 6px 4px 0; text-align: right; }
+.play-memo { position: absolute; right: -10px; top: -30px; z-index: 2; display: inline-flex; align-items: center; gap: 8px;
+  min-height: 44px; padding: 8px 12px 8px 8px; border: 0; border-radius: 3px; background: var(--paper); color: var(--ink);
+  box-shadow: var(--shadow); font-weight: 900; font-size: 14px; line-height: 1.2; cursor: pointer; transform: rotate(4deg); }
+.play-memo::before { content: ""; position: absolute; left: 50%; top: -7px; width: 34px; height: 12px; margin-left: -17px;
+  background: rgba(var(--cloth-rgb), .75); transform: rotate(-3deg); pointer-events: none; }
+.play-dot { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); display: grid; place-items: center;
+  box-shadow: inset 0 0 0 3px var(--accent), inset 0 0 0 5px rgba(255, 255, 255, .85); transform: rotate(-8deg); }
+.play-dot svg { width: 14px; height: 14px; margin-left: 3px; }
 .result.rise { animation: result-rise .35s cubic-bezier(.2, .9, .3, 1.2) 1; }
 @keyframes result-rise { from { transform: translateY(32px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
@@ -221,6 +252,10 @@ textarea.input { min-height: 88px; resize: vertical; }
 .filters { gap: 10px; }
 
 /* 登録・編集フォーム */
+.chip-add { background: rgba(var(--accent-rgb), .12); color: var(--tag-ink); box-shadow: none; }
+.tag-maker { gap: 8px; }
+.tag-maker .input { flex: 1; width: auto; min-width: 8em; }
+.tag-maker .btn { min-height: 44px; padding: 4px 14px; font-size: var(--fs-2); }
 .err { margin: 0; padding: 8px 12px; border-radius: var(--r-sm); background: var(--accent);
   color: var(--on-accent); font-weight: 700; font-size: var(--fs-2); }
 .err:empty { display: none; }
@@ -232,8 +267,10 @@ textarea.input { min-height: 88px; resize: vertical; }
 @media (prefers-reduced-motion: reduce) { .form[data-busy="true"] .hint::after { animation: none; } }
 
 /* ===== 献立帳 ===== */
-.book-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.book-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.book-head .screen-title { white-space: nowrap; }
 .book-head .screen-title { margin-bottom: 0; }
+.book-head > .row { margin-left: auto; }
 .settings-btn { width: 44px; height: 44px; }
 .settings-btn svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .screen-title small { font-size: var(--fs-2); font-weight: 700; color: var(--ink-soft); margin-left: 4px; }
@@ -242,7 +279,7 @@ textarea.input { min-height: 88px; resize: vertical; }
 
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 12px; list-style: none; margin: 0; padding: 0; }
 .grid:empty { display: none; }
-.tile { position: relative; margin-top: 6px; padding: 6px 6px 0; background: var(--paper); border-radius: var(--r-sm); box-shadow: 0 2px 5px rgba(74,46,28,.12); }
+.tile { position: relative; margin-top: 6px; padding: 6px 6px 0; background: var(--paper); border-radius: var(--r-sm); box-shadow: var(--shadow); }
 .tile::before { content: ""; position: absolute; left: 50%; top: -8px; width: 40px; height: 12px; margin-left: -20px;
   background: rgba(var(--cloth-rgb), .75); transform: rotate(-2deg); pointer-events: none; z-index: 1; }
 .tile-open { display: grid; align-content: start; width: 100%; padding: 0; border: 0; background: transparent; text-align: left; cursor: pointer; }
@@ -251,7 +288,9 @@ textarea.input { min-height: 88px; resize: vertical; }
 .tile-name { font-weight: 700; font-size: var(--fs-2); line-height: 1.35; overflow: hidden; display: -webkit-box;
   -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
 .tag { display: inline-block; padding: 0 10px; border-radius: 3px; font-size: var(--fs-1);
-  font-weight: 700; line-height: 1.5; background: rgba(var(--accent-rgb), .12); color: var(--accent-deep); }
+  font-weight: 700; line-height: 1.5; background: rgba(var(--accent-rgb), .12); color: var(--tag-ink); }
+.tag-my { font-size: 11px; padding: 0 8px; background: rgba(138, 106, 85, .16); color: var(--ink-soft); }
+.tile-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 
 /* 星：画像の右上に丸いバッジ。押せる範囲は見た目より外に少し広げる */
 .icon { position: relative; display: inline-grid; place-items: center; padding: 0; border: 0;

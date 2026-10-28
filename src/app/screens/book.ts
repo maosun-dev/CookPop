@@ -7,7 +7,9 @@ import { thumbImg } from '../thumb';
 import { BACK_ICON, ICONS, STAR_ICON } from '../icons';
 import type { FetchJson } from '../../core/oembed';
 import { countOf, lastMade } from '../../core/log';
-import { CATS, type Cat, type Recipe } from '../../core/recipe';
+import type { Recipe } from '../../core/recipe';
+import { filterRecipes } from '../../core/picker';
+import { createFilters } from '../filters';
 
 export interface BookDeps {
   fetchJson: FetchJson;
@@ -49,7 +51,6 @@ export function createBookScreen(
   deps: BookDeps,
 ): { el: HTMLElement; openForm(prefillUrl?: string): void; showRecipe(id: string): void } {
   let view: View = { kind: 'list' };
-  let cat: Cat | null = null; // null はすべて
   let favOnly = false;
   let detail: DetailView | null = null;
 
@@ -77,32 +78,35 @@ export function createBookScreen(
   const grid = el('ul', { class: 'grid' });
   const empty = el('p', { class: 'empty-note' });
 
-  // チップは1度だけ作り、押した状態だけ更新する
-  function makeChip(label: string, onClick: () => void): HTMLElement {
-    return el('button', { class: 'chip', type: 'button', 'aria-pressed': 'false', onclick: onClick }, label);
-  }
-  const catChipList: Array<{ cat: Cat | null; node: HTMLElement }> = [
-    { cat: null, node: makeChip('すべて', () => { cat = null; paintList(); }) },
-    ...CATS.map(c => ({ cat: c as Cat | null, node: makeChip(c, () => { cat = c; paintList(); }) })),
-  ];
-  const favChip = makeChip('お気に入りだけ', () => { favOnly = !favOnly; paintList(); });
-  const chips = el('div', { class: 'chips', role: 'group', 'aria-label': 'しぼりこみ' }, ...catChipList.map(c => c.node), favChip);
+  // 2段の絞り込み（ジャンル・マイタグ）とお気に入り。チップは1度だけ作り、押した状態だけ更新する
+  const filters = createFilters(state, () => paintList());
+  const favChip = el('button', { class: 'chip', type: 'button', 'aria-pressed': 'false', onclick: () => { favOnly = !favOnly; paintList(); } }, 'お気に入りだけ');
+  const favRow = el('div', { class: 'chips', role: 'group', 'aria-label': 'お気に入り' }, favChip);
 
   const listView = el(
     'div',
     { class: 'stack' },
-    el('div', { class: 'book-head' }, el('h1', { class: 'screen-title' }, '献立帳 ', countLabel), el('div', { class: 'row' }, settingsBtn, addBtn)),
-    chips,
+    el('div', { class: 'book-head' }, el('h1', { class: 'screen-title tape' }, '献立帳 ', countLabel), el('div', { class: 'row' }, settingsBtn, addBtn)),
+    filters.catRow,
+    filters.tagRow,
+    favRow,
     grid,
     empty,
   );
+
+  /** マイタグの札。小さく、3つまで出して残りは「+n」 */
+  function myTagLabels(r: Recipe): HTMLElement[] {
+    const shown = r.tags.slice(0, 3).map(t => el('span', { class: 'tag tag-my' }, t));
+    if (r.tags.length > 3) shown.push(el('span', { class: 'tag tag-my' }, `+${r.tags.length - 3}`));
+    return shown;
+  }
 
   function makeTile(r: Recipe): HTMLElement {
     const open = el(
       'button',
       { class: 'tile-open', type: 'button', onclick: () => showRecipe(r.id) },
       thumbImg(r.thumb, ''),
-      el('span', { class: 'tile-body' }, el('span', { class: 'tile-name' }, r.name), el('span', { class: 'tag' }, r.cat)),
+      el('span', { class: 'tile-body' }, el('span', { class: 'tile-name' }, r.name), el('span', { class: 'tile-tags' }, el('span', { class: 'tag' }, r.cat), ...myTagLabels(r))),
     );
     // 星はカードを開くボタンとは別の兄弟にする（押してもカードは開かない）
     const fav = el(
@@ -119,9 +123,8 @@ export function createBookScreen(
   /** 一覧を今のデータに合わせて描き直す。星を押した直後でもフォーカスは同じ星に戻す */
   function paintList(): void {
     const all = state.data.recipes;
-    const shown = all.filter(r => (cat === null || r.cat === cat) && (!favOnly || r.fav));
+    const shown = filterRecipes(all, { cat: filters.cat(), tag: filters.tag(), favOnly });
     countLabel.textContent = `${all.length}品`;
-    for (const c of catChipList) c.node.setAttribute('aria-pressed', cat === c.cat ? 'true' : 'false');
     favChip.setAttribute('aria-pressed', favOnly ? 'true' : 'false');
 
     const active = document.activeElement;
@@ -133,7 +136,9 @@ export function createBookScreen(
       again?.focus();
     }
 
-    chips.hidden = all.length === 0;
+    filters.catRow.hidden = all.length === 0;
+    favRow.hidden = all.length === 0;
+    filters.tagRow.hidden = all.length === 0 || state.data.settings.myTags.length === 0;
     empty.textContent = all.length === 0
       ? 'まだ何もありません。＋ 登録する で好きな料理動画を足しましょう'
       : shown.length === 0 ? 'この条件の料理はありません' : '';
@@ -243,7 +248,7 @@ export function createBookScreen(
         'div',
         { class: 'stack' },
         el('div', { class: 'row' }, backButton()),
-        el('h1', { class: 'screen-title' }, prefill?.recipeId ? '料理を編集' : '料理を登録'),
+        el('h1', { class: 'screen-title tape' }, prefill?.recipeId ? '料理を編集' : '料理を登録'),
         form.el,
       ),
       true,
@@ -262,6 +267,7 @@ export function createBookScreen(
 
   // データが変わったら、見えている表示を合わせる（詳細は作り直さず文字だけ。動画の枠を保つため）
   state.subscribe(() => {
+    filters.sync(); // 選んだタグの名前が変わった・消えた、を追いかける
     if (view.kind === 'list') {
       paintList();
     } else if (view.kind === 'detail') {

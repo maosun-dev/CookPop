@@ -51,7 +51,8 @@ describe('テーマ', () => {
   it('style.css：.pop は輪郭線も黒い影も無く、白い台紙とうすい影', () => {
     const pop = block('.pop')!;
     expect(pop).not.toMatch(/border:\s*\d+px\s+solid/);
-    expect(pop).toContain('0 2px 5px rgba(74,46,28,.12)');
+    expect(pop).toContain('box-shadow: var(--shadow)'); // 暗い見た目では --shadow が替わる
+    expect(css()).toContain('--shadow: 0 2px 5px rgba(74, 46, 28, .12)');
     expect(css()).not.toContain('4px 4px 0');
     expect(css()).not.toMatch(/(?:text-shadow|drop-shadow)/);
     expect(css()).not.toMatch(/radial-gradient|conic-gradient/);

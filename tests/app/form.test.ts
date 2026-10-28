@@ -112,3 +112,86 @@ describe('登録フォーム', () => {
     expect(pasteBtn(edit.el)).toBeUndefined();
   });
 });
+
+describe('登録フォーム：マイタグ', () => {
+  const tagChip = (root: HTMLElement, text: string) =>
+    [...root.querySelectorAll('[aria-label="マイタグ"] .chip')].find(c => c.textContent === text) as HTMLButtonElement;
+  const btnOf = (root: HTMLElement, text: string) => [...root.querySelectorAll('button')].find(b => b.textContent?.trim() === text) as HTMLButtonElement;
+  const make = () => {
+    const state = mkState();
+    const f = createForm(state, { fetchJson: async () => { throw new Error('x'); }, onDone: () => {} });
+    document.body.append(f.el);
+    return { state, f };
+  };
+  const create = (f: { el: HTMLElement }, name: string) => {
+    if (!f.el.querySelector('input[name="newTag"]')) btnOf(f.el, '＋ タグを作る').click();
+    const box = f.el.querySelector('input[name="newTag"]') as HTMLInputElement;
+    box.value = name;
+    btnOf(f.el, '作る').click();
+  };
+  it('ジャンルは7つのチップ', () => {
+    const { f } = make();
+    expect(f.el.querySelectorAll('[aria-label="ジャンル"] .chip')).toHaveLength(7);
+  });
+  it('タグを作るとその料理に付き、保存でタグも渡る', () => {
+    const { state, f } = make();
+    f.setUrl('https://youtu.be/ZZZZZZZZZZZ');
+    input(f.el, 'name').value = 'テスト丼';
+    create(f, ' お弁当 ');
+    expect(state.data.settings.myTags).toEqual(['お弁当']);
+    expect(tagChip(f.el, 'お弁当').getAttribute('aria-pressed')).toBe('true');
+    expect(f.el.querySelector('input[name="newTag"]')).toBeNull(); // 作ったら欄は閉じる
+    (f.el.querySelector('form') as HTMLFormElement).requestSubmit();
+    expect(state.data.recipes.find(r => r.videoId === 'ZZZZZZZZZZZ')!.tags).toEqual(['お弁当']);
+  });
+  it('作ったタグのチップは押して付け外しできる', () => {
+    const state = mkState();
+    state.addTag('作り置き');
+    const f = createForm(state, { fetchJson: async () => { throw new Error('x'); }, onDone: () => {} });
+    document.body.append(f.el);
+    f.setUrl('https://youtu.be/ZZZZZZZZZZZ');
+    input(f.el, 'name').value = 'テスト丼';
+    const chip = tagChip(f.el, '作り置き');
+    expect(chip.getAttribute('aria-pressed')).toBe('false');
+    chip.click();
+    expect(tagChip(f.el, '作り置き').getAttribute('aria-pressed')).toBe('true');
+    tagChip(f.el, '作り置き').click();
+    expect(tagChip(f.el, '作り置き').getAttribute('aria-pressed')).toBe('false');
+  });
+  it('エラーの言葉：12文字まで・もうある・20個まで', () => {
+    const { state, f } = make();
+    create(f, 'あ'.repeat(13));
+    expect(f.el.textContent).toContain('12文字までにしてね');
+    expect(state.data.settings.myTags).toHaveLength(0);
+    (f.el.querySelector('input[name="newTag"]') as HTMLInputElement).value = 'ほげ';
+    btnOf(f.el, '作る').click();
+    create(f, 'ほげ');
+    expect(f.el.textContent).toContain('もうあるよ');
+    for (let i = 0; i < 19; i++) state.addTag('t' + i); // ほげ + 19 = 20
+    create(f, 'もう一つ');
+    expect(f.el.textContent).toContain('20個までだよ');
+  });
+  it('編集でタグを外して保存できる', () => {
+    const state = mkState();
+    state.addTag('お弁当');
+    state.addTag('作り置き');
+    const id = state.data.recipes[0].id;
+    state.setRecipeTags(id, ['お弁当', '作り置き']);
+    const f = createForm(state, { fetchJson: async () => ({}), onDone: () => {}, prefill: { recipeId: id } });
+    document.body.append(f.el);
+    expect(tagChip(f.el, 'お弁当').getAttribute('aria-pressed')).toBe('true');
+    tagChip(f.el, 'お弁当').click();
+    (f.el.querySelector('form') as HTMLFormElement).requestSubmit();
+    expect(state.data.recipes[0].tags).toEqual(['作り置き']);
+  });
+  it('小さな欄で Enter を押しても、フォームは保存されずタグが作られる', () => {
+    const { state, f } = make();
+    btnOf(f.el, '＋ タグを作る').click();
+    const box = f.el.querySelector('input[name="newTag"]') as HTMLInputElement;
+    box.value = 'ごちそう';
+    box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    expect(state.data.settings.myTags).toEqual(['ごちそう']);
+    expect(state.data.recipes).toHaveLength(8);
+  });
+});
+
