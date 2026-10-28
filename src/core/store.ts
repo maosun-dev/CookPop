@@ -1,5 +1,6 @@
 // 保存の形・読み込み・バックアップ。保存先は KeyValueStore の向こう側（ブラウザの localStorage など）。
 import { defaultRecipes, findByVideoId, sanitizeRecipe, type Recipe } from './recipe';
+import { TAG_MAX, TAG_MAX_LEN } from './tagRules';
 import { sanitizeLogs, type CookLog } from './log';
 
 /** 保存先の最小の形（localStorage がそのまま当てはまる） */
@@ -18,10 +19,6 @@ const THEMES: readonly unknown[] = ['auto', 'light', 'dark'];
 
 export type Cloth = 'yellow' | 'red' | 'green' | 'blue' | 'pink' | 'purple';
 export const CLOTHS: readonly Cloth[] = ['yellow', 'red', 'green', 'blue', 'pink', 'purple'];
-
-/** マイタグの最大数・名前の最大文字数 */
-const MY_TAGS_MAX = 20;
-const MY_TAG_LEN = 12;
 
 export interface Settings {
   cloth: Cloth;
@@ -43,10 +40,9 @@ export interface AppData {
 
 /** 最初の状態（最初の8品・記録なし・既定の設定） */
 export function initialData(today: string): AppData {
-  return { version: DATA_VERSION, recipes: defaultRecipes(today), logs: [], settings: { ...DEFAULT_SETTINGS } };
+  return { version: DATA_VERSION, recipes: defaultRecipes(today), logs: [], settings: { ...DEFAULT_SETTINGS, myTags: [] } };
 }
 
-/** 保存から読んだ設定を項目ごとに検証する。おかしい項目は既定に戻す */
 /** 保存から読んだマイタグ名を整える（前後の空白を取る・1〜12 文字・重複なし・20 個まで） */
 function sanitizeMyTags(x: unknown): string[] {
   if (!Array.isArray(x)) return [];
@@ -55,13 +51,14 @@ function sanitizeMyTags(x: unknown): string[] {
     if (typeof t !== 'string') continue;
     const name = t.trim();
     const len = Array.from(name).length;
-    if (len < 1 || len > MY_TAG_LEN || out.includes(name)) continue;
+    if (len < 1 || len > TAG_MAX_LEN || out.includes(name)) continue;
     out.push(name);
-    if (out.length >= MY_TAGS_MAX) break;
+    if (out.length >= TAG_MAX) break;
   }
   return out;
 }
 
+/** 保存から読んだ設定を項目ごとに検証する。おかしい項目は既定に戻す */
 export function sanitizeSettings(x: unknown): Settings {
   const o: Record<string, unknown> = typeof x === 'object' && x !== null ? (x as Record<string, unknown>) : {};
   return {
@@ -166,7 +163,7 @@ export function importBackup(current: AppData, raw: string, mode: 'replace' | 'm
   const myTags = [...current.settings.myTags];
   for (const t of imported.settings.myTags) {
     if (myTags.includes(t)) continue;
-    if (myTags.length < MY_TAGS_MAX) myTags.push(t);
+    if (myTags.length < TAG_MAX) myTags.push(t);
   }
   const added = new Set(recipes.slice(current.recipes.length));
   const fixedRecipes = recipes.map(r =>

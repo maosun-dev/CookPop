@@ -128,7 +128,7 @@ describe('バックアップ', () => {
 describe('版2への読み替えとマイタグ', () => {
   it('版1のデータは版2になり、ご飯・麺は振り分けられる', () => {
     const old = { id: 'a', videoId: 'HzLAMA5ck_8', name: 'きつねうどん', cat: 'ご飯・麺' };
-    const raw = JSON.stringify({ version: 2, recipes: [old, { ...old, id: 'b', videoId: 'm10e2igEArE', name: '親子丼' }], logs: [], settings: { theme: 'dark' } });
+    const raw = JSON.stringify({ version: 1, recipes: [old, { ...old, id: 'b', videoId: 'm10e2igEArE', name: '親子丼' }], logs: [], settings: { theme: 'dark' } });
     const d = parseData(raw)!;
     expect(d.version).toBe(2);
     expect(d.settings.cloth).toBe('yellow');
@@ -177,5 +177,24 @@ describe('版2への読み替えとマイタグ', () => {
   it('置き換えはマイタグも取り込む', () => {
     const other: AppData = { version: 2, recipes: [], logs: [], settings: { ...DEFAULT_SETTINGS, myTags: ['a'] } };
     expect(importBackup(initialData(today), exportBackup(other), 'replace')!.settings.myTags).toEqual(['a']);
+  });
+  const v1 = () => JSON.stringify({ version: 1, recipes: [{ id: 'z', videoId: 'Zz0Zz0Zz0Zz', name: 'ラーメン', cat: 'ご飯・麺' }], logs: [], settings: { theme: 'dark' } });
+  it('版1のバックアップを置き換えで読むと版2になり振り分けられる', () => {
+    const got = importBackup(initialData(today), v1(), 'replace')!;
+    expect(got.version).toBe(2);
+    expect(got.recipes.map(r => r.cat)).toEqual(['麺']);
+    expect(got.settings.cloth).toBe('yellow');
+    expect(got.settings.myTags).toEqual([]);
+  });
+  it('版1のバックアップを足すで読むと版2になり振り分けられる', () => {
+    const got = importBackup(initialData(today), v1(), 'merge')!;
+    expect(got.version).toBe(2);
+    expect(got.recipes).toHaveLength(9);
+    expect(got.recipes[8].cat).toBe('麺');
+    expect(got.recipes[8].tags).toEqual([]);
+    expect(got.settings.myTags).toEqual([]);
+  });
+  it('initialData は既定の myTags 配列を使い回さない', () => {
+    expect(initialData(today).settings.myTags).not.toBe(DEFAULT_SETTINGS.myTags);
   });
 });

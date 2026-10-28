@@ -1,5 +1,6 @@
 // 料理の形（Recipe）と、YouTube のリンクの解析。
 import { isDateStr } from './date';
+import { TAGS_PER_RECIPE } from './tagRules';
 
 export const CATS = ['主菜', '副菜', '汁物', 'ご飯', '麺', 'パン', 'おやつ'] as const;
 export type Cat = typeof CATS[number];
@@ -41,8 +42,6 @@ declare const URL: new (url: string) => ParsedUrl;
 
 const NAME_MAX = 40;
 const MEMO_MAX = 400;
-/** 1品に付けられるタグの数 */
-const RECIPE_TAGS_MAX = 10;
 const DEFAULT_CHANNEL = 'Koh Kentetsu Kitchen';
 
 /** 動画 ID として使える形か */
@@ -104,7 +103,7 @@ function cleanTags(x: unknown): string[] {
     if (typeof t !== 'string') continue;
     const name = t.trim();
     if (name && !out.includes(name)) out.push(name);
-    if (out.length >= RECIPE_TAGS_MAX) break;
+    if (out.length >= TAGS_PER_RECIPE) break;
   }
   return out;
 }

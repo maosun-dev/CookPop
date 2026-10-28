@@ -1,9 +1,8 @@
 // マイタグの操作。元のデータは変えず、新しいデータを返す。
 import type { AppData } from './store';
+import { TAG_MAX_LEN, TAG_MAX, TAGS_PER_RECIPE } from './tagRules';
 
-export const TAG_MAX_LEN = 12;
-export const TAG_MAX = 20;
-export const TAGS_PER_RECIPE = 10;
+export { TAG_MAX_LEN, TAG_MAX, TAGS_PER_RECIPE };
 
 /** 前後の空白を取って 1〜12 文字ならその名前、そうでなければ null */
 export function normalizeTag(name: string): string | null {
