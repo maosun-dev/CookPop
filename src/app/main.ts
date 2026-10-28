@@ -1,4 +1,4 @@
-// 起動の流れ：文字と見た目を読み込み、（iPhone では）消えにくい保存から戻し、データを用意し、4つのタブを画面に出す。
+// 起動の流れ：文字と見た目を読み込み、（iPhone では）消えにくい保存から戻し、データを用意し、3つのタブを画面に出す。
 // 日本語のサブセットだけを読み込む（英数字も含まれる）。全部入りだと CSS が重い
 import '@fontsource/zen-maru-gothic/japanese-500.css';
 import '@fontsource/zen-maru-gothic/japanese-700.css';
@@ -24,6 +24,7 @@ import { listenShares } from './shareReceive';
 import { createState } from './state';
 import { isNativeApp, mirrorStore, nativePrefs, prepareSaves } from './native';
 import { safeStore } from './storage';
+import { openSheet } from './sheet';
 import { createTabs } from './tabs';
 import { toast } from './toast';
 import { applyTheme } from './theme';
@@ -35,7 +36,7 @@ async function boot(): Promise<void> {
   // iPhone アプリでは、書くたびに消えにくい保存領域にも写す。Web ではこれまで通り
   const store = isNativeApp() ? mirrorStore(safeStore(), nativePrefs()) : safeStore();
   const state = createState(store, () => new Date(), newId);
-  applyTheme(state.data.settings.theme);
+  applyTheme(state.data.settings.theme, state.data.settings.cloth);
 
   const native = isNativeApp();
   // iPhone では動画を外のブラウザ（YouTube アプリ・Safari）で開く。Web ではそのまま
@@ -58,6 +59,7 @@ async function boot(): Promise<void> {
     openPlayer: openVideo,
     confirm: msg => window.confirm(msg),
     pauseAll: pauseAllPlayers,
+    openSettings: () => { openSheet(settings.el, '設定'); },
     // 押されたときだけ読む（勝手に読むと iPhone が毎回「ペーストを許可」と聞くため）
     readClipboard: native
       ? nativeClipboardRead(Clipboard)
@@ -76,6 +78,7 @@ async function boot(): Promise<void> {
   const settings = createSettingsScreen(state, {
     files,
     version: __APP_VERSION__,
+    confirm: msg => window.confirm(msg),
     // 計画2ではブラウザの確認ダイアログを2段で使う
     confirmMode: async () => {
       if (window.confirm('今のデータをバックアップの内容に置き換えますか？\n（キャンセルすると「足す」を選べます）')) return 'replace';
@@ -87,7 +90,6 @@ async function boot(): Promise<void> {
     { id: 'pick', label: 'きめる', icon: ICONS.pick, view: pick.el },
     { id: 'book', label: '献立帳', icon: ICONS.book, view: book.el },
     { id: 'log', label: 'きろく', icon: ICONS.log, view: log.el },
-    { id: 'settings', label: '設定', icon: ICONS.settings, view: settings.el },
   ]);
 
   document.getElementById('app')!.append(tabs.el);
@@ -107,7 +109,7 @@ async function boot(): Promise<void> {
     );
   }
 
-  state.subscribe(() => applyTheme(state.data.settings.theme));
+  state.subscribe(() => applyTheme(state.data.settings.theme, state.data.settings.cloth));
 }
 
 // 起動で落ちても白い画面のままにしない

@@ -106,3 +106,17 @@ describe('献立帳', () => {
     expect((scr.el.querySelector('.chips') as HTMLElement).hidden).toBe(true);
   });
 });
+
+describe('献立帳：設定のボタン', () => {
+  it('見出しの右にお鍋のボタンがあり、押すと openSettings が呼ばれる。渡さなければ出ない', () => {
+    const state = createState(fake(), () => new Date(2026, 9, 23), () => 'new');
+    let n = 0;
+    const scr = createBookScreen(state, { fetchJson: async () => ({}), openPlayer: () => {}, confirm: () => true, openSettings: () => { n++; } });
+    const b = scr.el.querySelector('button[aria-label="設定"]') as HTMLElement;
+    expect(b.querySelector('svg')).not.toBeNull();
+    b.click();
+    expect(n).toBe(1);
+    const scr2 = createBookScreen(state, { fetchJson: async () => ({}), openPlayer: () => {}, confirm: () => true });
+    expect(scr2.el.querySelector('button[aria-label="設定"]')).toBeNull();
+  });
+});

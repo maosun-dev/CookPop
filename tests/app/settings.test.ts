@@ -73,3 +73,60 @@ describe('設定', () => {
     expect(state.data.recipes).toHaveLength(8);
   });
 });
+
+describe('設定：ふきんの色とマイタグ', () => {
+  const mk = (confirmFn?: (m: string) => boolean) => {
+    const state = createState(fake(), () => new Date(2026, 9, 23), () => 'x');
+    const scr = createSettingsScreen(state, { files: { saveText: async () => {}, pickText: async () => null }, confirmMode: async () => null, version: '0.1.0', confirm: confirmFn });
+    return { state, scr };
+  };
+  it('ふきんの色は6つの丸いボタンで、押すと settings.cloth が変わり aria-pressed が動く', () => {
+    const { state, scr } = mk();
+    const btns = [...scr.el.querySelectorAll<HTMLElement>('.cloth-btn')];
+    expect(btns.map(b => b.getAttribute('aria-label'))).toEqual(['たまご', 'トマト', '抹茶', 'ソーダ', 'いちご', 'ぶどう']);
+    expect(btns[0].getAttribute('aria-pressed')).toBe('true');
+    btns[2].click();
+    expect(state.data.settings.cloth).toBe('green');
+    expect(btns[2].getAttribute('aria-pressed')).toBe('true');
+    expect(btns[0].getAttribute('aria-pressed')).toBe('false');
+  });
+  it('マイタグが無いときは、無いと書く', () => {
+    const { scr } = mk();
+    expect(scr.el.querySelector('.tag-manage')!.textContent).toContain('まだありません');
+  });
+  it('マイタグの名前を変える：料理のタグも新しい名前になる', () => {
+    const { state, scr } = mk();
+    state.addTag('お弁当');
+    state.setRecipeTags(state.data.recipes[0].id, ['お弁当']);
+    btn(scr.el, '名前を変える').click();
+    const input = scr.el.querySelector<HTMLInputElement>('.tag-row input')!;
+    input.value = '平日弁当';
+    btn(scr.el, '決める').click();
+    expect(state.data.settings.myTags).toEqual(['平日弁当']);
+    expect(state.data.recipes[0].tags).toEqual(['平日弁当']);
+    expect(scr.el.querySelector('.tag-manage')!.textContent).toContain('平日弁当');
+  });
+  it('名前が長すぎる・同じ名前のときは変えずにお知らせ', () => {
+    const { state, scr } = mk();
+    state.addTag('あ');
+    state.addTag('い');
+    btn(scr.el, '名前を変える').click();
+    const input = scr.el.querySelector<HTMLInputElement>('.tag-row input')!;
+    input.value = 'い';
+    btn(scr.el, '決める').click();
+    expect(state.data.settings.myTags).toEqual(['あ', 'い']);
+    expect(document.querySelector('.toast')!.textContent).toContain('もう');
+  });
+  it('マイタグを消す：確認して、料理からも外れる。やめれば残る', () => {
+    let ok = false;
+    const { state, scr } = mk(() => ok);
+    state.addTag('お弁当');
+    state.setRecipeTags(state.data.recipes[0].id, ['お弁当']);
+    btn(scr.el, '消す').click();
+    expect(state.data.settings.myTags).toEqual(['お弁当']);
+    ok = true;
+    btn(scr.el, '消す').click();
+    expect(state.data.settings.myTags).toEqual([]);
+    expect(state.data.recipes[0].tags).toEqual([]);
+  });
+});

@@ -1,7 +1,7 @@
-// 下のタブ。4つの画面を切り替える。
+// 下のタブ。3つの画面を切り替える。
 import { el, svg } from './ui';
 
-export type TabId = 'pick' | 'book' | 'log' | 'settings';
+export type TabId = 'pick' | 'book' | 'log';
 
 export interface TabDef {
   id: TabId;

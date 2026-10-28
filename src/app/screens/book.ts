@@ -4,7 +4,7 @@ import { toast } from '../toast';
 import type { AppState } from '../state';
 import { createForm } from './form';
 import { thumbImg } from '../thumb';
-import { BACK_ICON, STAR_ICON } from '../icons';
+import { BACK_ICON, ICONS, STAR_ICON } from '../icons';
 import type { FetchJson } from '../../core/oembed';
 import { countOf, lastMade } from '../../core/log';
 import { CATS, type Cat, type Recipe } from '../../core/recipe';
@@ -18,6 +18,8 @@ export interface BookDeps {
   pauseAll?: () => void;
   /** クリップボードの文字を読む。登録フォームの「クリップボードから貼る」で使う */
   readClipboard?: () => Promise<string>;
+  /** 見出しの右のお鍋のボタンで設定のシートを開く。無ければボタンを出さない */
+  openSettings?: () => void;
 }
 
 /** 'YYYY-MM-DD' を「M月D日」にする */
@@ -69,6 +71,9 @@ export function createBookScreen(
   // ===== 一覧 =====
   const countLabel = el('small', {});
   const addBtn = el('button', { class: 'btn btn-yolk pop pop-press', type: 'button', onclick: () => openForm() }, '＋ 登録する');
+  const settingsBtn = deps.openSettings
+    ? el('button', { class: 'icon settings-btn', type: 'button', 'aria-label': '設定', onclick: () => deps.openSettings!() }, icon(ICONS.pot))
+    : null;
   const grid = el('ul', { class: 'grid' });
   const empty = el('p', { class: 'empty-note' });
 
@@ -86,7 +91,7 @@ export function createBookScreen(
   const listView = el(
     'div',
     { class: 'stack' },
-    el('div', { class: 'book-head' }, el('h1', { class: 'screen-title' }, '献立帳 ', countLabel), addBtn),
+    el('div', { class: 'book-head' }, el('h1', { class: 'screen-title' }, '献立帳 ', countLabel), el('div', { class: 'row' }, settingsBtn, addBtn)),
     chips,
     grid,
     empty,
