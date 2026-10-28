@@ -8,6 +8,7 @@ function fakePlugin(over: Partial<AdsPlugin> = {}) {
   const calls: string[] = [];
   const opts: unknown[] = [];
   let sizeFn: ((s: { width: number; height: number }) => void) | null = null;
+  let failFn: (() => void) | null = null;
   const p: AdsPlugin = {
     trackingAuthorizationStatus: async () => { calls.push('status'); return { status: 'authorized' }; },
     requestTrackingAuthorization: async () => { calls.push('request'); },
@@ -18,15 +19,17 @@ function fakePlugin(over: Partial<AdsPlugin> = {}) {
     hideBanner: async () => { calls.push('hide'); },
     resumeBanner: async () => { calls.push('resume'); },
     addListener: (_ev, fn) => { sizeFn = fn; return {}; },
+    onFailedToLoad: (fn) => { failFn = fn; return {}; },
     ...over,
   };
-  return { p, calls, opts, size: (h: number) => sizeFn?.({ width: 375, height: h }) };
+  return { p, calls, opts, size: (h: number) => sizeFn?.({ width: 375, height: h }), failed: () => failFn?.() };
 }
 
 function make(plugin: AdsPlugin) {
   const heights: number[] = [];
-  const ads = createAds({ plugin, setHeight: (px) => heights.push(px), ready: async () => {}, wait: async () => {} });
-  return { ads, heights };
+  const waits: number[] = [];
+  const ads = createAds({ plugin, setHeight: (px) => heights.push(px), ready: async () => {}, wait: async (ms) => { waits.push(ms); } });
+  return { ads, heights, waits };
 }
 
 // 出し入れは裏で進むので、たまった Promise を流し切る
@@ -135,5 +138,49 @@ describe('バナー広告の係', () => {
     ads.setWanted(false); await flush();
     ads.setWanted(true); await flush();
     expect(f.calls.filter((c) => c === 'show')).toHaveLength(2);
+  });
+
+  // 本物の部品は、読み込む前に showBanner を成功で返し、読み込みに失敗するとバナーを外してしまう
+  it('resumeBanner が失敗したら（バナーが外されていたら）showBanner から作り直す', async () => {
+    const f = fakePlugin({
+      resumeBanner: async () => { f.calls.push('resume'); throw new Error('not find subView'); },
+    });
+    const { ads } = make(f.p);
+    await ads.init();
+    ads.setWanted(true); await flush();
+    ads.setWanted(false); await flush();
+    ads.setWanted(true); await flush();
+    expect(f.calls.filter((c) => ['show', 'hide', 'resume'].includes(c))).toEqual(['show', 'hide', 'resume', 'show']);
+  });
+  it('読み込みに失敗したら高さ0にし、60秒待って showBanner からやり直す', async () => {
+    const f = fakePlugin();
+    const { ads, heights, waits } = make(f.p);
+    await ads.init();
+    ads.setWanted(true); await flush();
+    f.size(50);
+    f.failed(); await flush();
+    expect(heights).toContain(0);
+    expect(waits).toContain(60000);
+    expect(f.calls.filter((c) => c === 'show')).toHaveLength(2);
+    expect(f.calls).not.toContain('resume');
+  });
+  it('隠しているのに読み込みが終わって大きさの知らせが来たら、隠し直して高さ0のまま', async () => {
+    const f = fakePlugin();
+    const { ads, heights } = make(f.p);
+    await ads.init();
+    ads.setWanted(true); await flush();
+    ads.setWanted(false); await flush();
+    const hides = f.calls.filter((c) => c === 'hide').length;
+    f.size(50); await flush();
+    expect(f.calls.filter((c) => c === 'hide').length).toBe(hides + 1);
+    expect(heights.at(-1)).toBe(0);
+  });
+  it('出しているときの大きさの知らせでは隠さない', async () => {
+    const f = fakePlugin();
+    const { ads } = make(f.p);
+    await ads.init();
+    ads.setWanted(true); await flush();
+    f.size(50); await flush();
+    expect(f.calls).not.toContain('hide');
   });
 });

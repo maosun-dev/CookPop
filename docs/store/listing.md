@@ -88,4 +88,4 @@ The app comes with 8 sample recipes, so you can try "きめて！" right away.
 
 Videos are played with the official YouTube embedded player (YouTube IFrame API). Because YouTube refuses embeds from the app's local origin, the player is loaded from our own page, https://maosun-dev.com/cookpop/player.html, inside an iframe. If a video cannot be embedded, the app shows a button to open it in the YouTube app.
 
-The app shows a banner ad (Google AdMob) above the tab bar. The ad is hidden while a video is playing.
+The app shows a banner ad (Google AdMob) above the tab bar. The ad is hidden while a video player is shown, while a sheet (such as Settings) is open, and while the keyboard is up.

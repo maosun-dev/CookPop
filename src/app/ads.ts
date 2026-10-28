@@ -26,7 +26,12 @@ export interface AdsPlugin {
   hideBanner(): Promise<void>;
   resumeBanner(): Promise<void>;
   addListener(ev: 'bannerAdSizeChanged', fn: (s: { width: number; height: number }) => void): unknown;
+  /** 読み込みに失敗したとき（部品はバナーを外す） */
+  onFailedToLoad(fn: () => void): unknown;
 }
+
+/** 読み込みに失敗したあと、作り直すまで待つ時間 */
+const RETRY_MS = 60000;
 
 export interface Ads {
   init(): Promise<void>;
@@ -56,15 +61,18 @@ export function createAds(deps: {
     try {
       while (wanted !== shown) {
         if (wanted) {
+          if (created) {
+            // 読み込みに失敗した部品はバナーを外してしまい、resume できない。そのときは作り直す
+            try { await plugin.resumeBanner(); shown = true; } catch { created = false; continue; }
+            paint();
+            continue;
+          }
           try {
-            if (created) await plugin.resumeBanner();
-            else {
-              await plugin.showBanner({
-                adId: testing ? TEST_BANNER_ID : REAL_BANNER_ID,
-                adSize: 'ADAPTIVE_BANNER', position: 'BOTTOM_CENTER', margin: BANNER_MARGIN, isTesting: testing,
-              });
-              created = true;
-            }
+            await plugin.showBanner({
+              adId: testing ? TEST_BANNER_ID : REAL_BANNER_ID,
+              adSize: 'ADAPTIVE_BANNER', position: 'BOTTOM_CENTER', margin: BANNER_MARGIN, isTesting: testing,
+            });
+            created = true;
             shown = true;
           } catch { break; } // 出せなかった：高さ0のまま、次に頼まれたらまた試す
         } else {
@@ -109,7 +117,19 @@ export function createAds(deps: {
         dead = true;
         return;
       }
-      plugin.addListener('bannerAdSizeChanged', (s) => { height = s.height || 0; paint(); });
+      plugin.addListener('bannerAdSizeChanged', (s) => {
+        height = s.height || 0;
+        // 部品は読み込みが終わると、隠す頼みのあとでもバナーを表に出す。隠したいときは隠し直す
+        if (height > 0 && !wanted) void plugin.hideBanner().catch(() => { /* 隠せなくても続ける */ });
+        paint();
+      });
+      plugin.onFailedToLoad(() => {
+        // 部品はバナーを外してしまうので、しばらく待って作るところからやり直す
+        created = false;
+        shown = false;
+        paint();
+        void deps.wait(RETRY_MS).then(() => settle());
+      });
       ready = true;
       void settle();
     },
@@ -155,6 +175,7 @@ function realPlugin(): AdsPlugin {
     hideBanner: () => AdMob.hideBanner(),
     resumeBanner: () => AdMob.resumeBanner(),
     addListener: (_ev, fn) => AdMob.addListener(BannerAdPluginEvents.SizeChanged, (s) => fn(s)),
+    onFailedToLoad: (fn) => AdMob.addListener(BannerAdPluginEvents.FailedToLoad, () => fn()),
   };
 }
 
