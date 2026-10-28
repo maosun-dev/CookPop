@@ -10,6 +10,8 @@ import { Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { CapacitorShareTarget } from '@capgo/capacitor-share-target';
 import { FilePicker } from '@capawesome/capacitor-file-picker';
+import { initAds, setBannerWanted } from './ads';
+import { watchBanner } from './bannerRule';
 import { webFiles } from './files';
 import { nativeClipboardRead, nativeFiles, nativeOpenExternal, type FsLike } from './nativeDeps';
 import { newId } from './ids';
@@ -110,6 +112,10 @@ async function boot(): Promise<void> {
   }
 
   state.subscribe(() => applyTheme(state.data.settings.theme, state.data.settings.cloth));
+
+  // バナー広告：動画・シート・入力中のときは隠す（bannerRule.ts）
+  initAds();
+  watchBanner(document, setBannerWanted);
 }
 
 // 起動で落ちても白い画面のままにしない

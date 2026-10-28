@@ -20,6 +20,7 @@
   --r-sm: 4px; --r-md: 4px; --r-lg: 6px; --r-pill: 999px;
   --fs-1: 13px; --fs-2: 15px; --fs-3: 17px; --fs-4: 22px; --fs-5: 28px; --fs-6: 40px;
   --tabbar-h: 64px;
+  --ad-h: 0px; /* バナー広告の高さ（ads.ts が入れる。出していなければ 0） */
   color-scheme: light;
 }
 /* ふきんの色（設計書 2.1）。設定の色見本のボタンにも同じ値が効く */
@@ -116,7 +117,7 @@ h1, h2, h3, p { margin: 0; }
   background: var(--paper); box-shadow: inset 0 0 0 1.5px rgba(138, 106, 85, .45); font-size: 16px; }
 textarea.input { min-height: 88px; resize: vertical; }
 
-.screen { display: none; padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(var(--tabbar-h) + 24px + env(safe-area-inset-bottom, 0px)); max-width: 560px; margin: 0 auto; }
+.screen { display: none; padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(var(--tabbar-h) + var(--ad-h) + 24px + env(safe-area-inset-bottom, 0px)); max-width: 560px; margin: 0 auto; }
 /* 画面全体は動かさず、いまの画面の中だけスクロールする（中身が短ければ動かない） */
 .app { position: fixed; inset: 0; }
 .screen[data-active="true"] { display: block; position: absolute; inset: 0; overflow-y: auto;
@@ -139,7 +140,7 @@ textarea.input { min-height: 88px; resize: vertical; }
 .tab[aria-selected="true"] .tab-ico { background: rgba(var(--accent-rgb), .15); }
 .tab-ico { width: 44px; height: 30px; display: grid; place-items: center; border-radius: 8px; }
 
-.toast { position: fixed; left: 50%; bottom: calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+.toast { position: fixed; left: 50%; bottom: calc(var(--tabbar-h) + var(--ad-h) + 16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
   background: var(--ink); color: var(--base); padding: 8px 18px; border-radius: var(--r-pill); font-weight: 700;
   opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 40; }
 .toast[data-show="true"] { opacity: 1; }

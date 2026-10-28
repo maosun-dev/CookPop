@@ -94,4 +94,12 @@ describe('テーマ', () => {
     expect(active).toContain('position: absolute');
     expect(css()).toMatch(/\.app\s*\{[^}]*position: fixed/);
   });
+
+  it('画面の下の余白とトーストは、バナーの高さ --ad-h ぶん上がる', () => {
+    expect(css()).toMatch(/--ad-h:\s*0px;/);
+    const screen = css().match(/\n\.screen \{[^}]*\}/)![0];
+    expect(screen).toContain('var(--ad-h)');
+    const toast = css().match(/\n\.toast \{[^}]*\}/)![0];
+    expect(toast).toContain('var(--ad-h)');
+  });
 });

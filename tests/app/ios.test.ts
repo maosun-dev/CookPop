@@ -21,6 +21,13 @@ describe('iPhone の包み', () => {
     expect(o).not.toContain('Landscape');
     expect(p).toMatch(/<key>ITSAppUsesNonExemptEncryption<\/key>\s*<false\/>/);
   });
+  it('Info.plist：AdMob の番号・追跡の説明・広告ネットワーク', () => {
+    const p = readFileSync('ios/App/App/Info.plist', 'utf8');
+    expect(p).toMatch(/<key>GADApplicationIdentifier<\/key>\s*<string>ca-app-pub-7017663942238206~7979412343<\/string>/);
+    expect(p).toMatch(/<key>NSUserTrackingUsageDescription<\/key>\s*<string>許可すると、あなたの興味に合った広告が表示されやすくなります。許可しなくても、アプリはすべて使えます。<\/string>/);
+    expect(p).toContain('<key>SKAdNetworkItems</key>');
+    expect(p).toContain('cstr6suwn9.skadnetwork');
+  });
   it('Xcode：版 0.1.0・ID・PrivacyInfo が Resources に入っている', () => {
     const x = readFileSync('ios/App/App.xcodeproj/project.pbxproj', 'utf8');
     expect(x).toMatch(/MARKETING_VERSION = 0\.1\.0;/);
