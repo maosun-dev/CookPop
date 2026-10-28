@@ -71,4 +71,62 @@ describe('state', () => {
     s.updateSettings({ theme: 'light' }); off(); s.updateSettings({ theme: 'auto' });
     expect(c).toBe(1);
   });
+
+  describe('マイタグとふきんの色', () => {
+    function counted() {
+      const st = fakeStore();
+      const s = createState(st, () => new Date(2026, 9, 23, 12), () => 'id' + (++n));
+      let calls = 0; s.subscribe(() => { calls++; });
+      let saves = 0; const orig = st.setItem; st.setItem = (k, v) => { saves++; orig(k, v); };
+      return { s, st, calls: () => calls, saves: () => saves };
+    }
+    it('足すのが成功すると保存と知らせが1回ずつ。失敗は0回', () => {
+      const c = counted();
+      expect(c.s.addTag(' 作り置き ')).toBe('ok');
+      expect(c.s.data.settings.myTags).toEqual(['作り置き']);
+      expect([c.calls(), c.saves()]).toEqual([1, 1]);
+      expect(c.s.addTag('作り置き')).toBe('dup');
+      expect(c.s.addTag('   ')).toBe('empty');
+      expect(c.s.addTag('あ'.repeat(13))).toBe('long');
+      expect([c.calls(), c.saves()]).toEqual([1, 1]);
+      for (let i = 0; i < 19; i++) c.s.addTag('t' + i);
+      expect(c.s.addTag('あふれ')).toBe('full');
+      expect(c.calls()).toBe(20);
+    });
+    it('料理にタグをつけ、名前の変更が料理に反映され、消すと外れる', () => {
+      const c = counted();
+      const id = c.s.data.recipes[0].id;
+      c.s.addTag('A'); c.s.addTag('B');
+      const base = c.calls();
+      c.s.setRecipeTags(id, ['B', 'A', 'ない']);
+      expect(c.s.data.recipes[0].tags).toEqual(['B', 'A']);
+      expect(c.calls()).toBe(base + 1);
+      c.s.setRecipeTags('なし', ['A']);
+      expect(c.calls()).toBe(base + 1);
+      expect(c.s.renameTag('A', 'C')).toBe('ok');
+      expect(c.s.data.settings.myTags).toEqual(['C', 'B']);
+      expect(c.s.data.recipes[0].tags).toEqual(['B', 'C']);
+      expect(c.calls()).toBe(base + 2);
+      expect(c.s.renameTag('C', 'B')).toBe('dup');
+      expect(c.s.renameTag('Z', 'Y')).toBe('missing');
+      expect(c.s.renameTag('C', ' ')).toBe('empty');
+      expect(c.s.renameTag('C', 'あ'.repeat(13))).toBe('long');
+      expect(c.calls()).toBe(base + 2);
+      c.s.deleteTag('B');
+      expect(c.s.data.settings.myTags).toEqual(['C']);
+      expect(c.s.data.recipes[0].tags).toEqual(['C']);
+      expect(c.calls()).toBe(base + 3);
+      c.s.deleteTag('なし');
+      expect(c.calls()).toBe(base + 3);
+      expect(c.s.data.recipes).toHaveLength(8);
+    });
+    it('ふきんの色を変えられ、登録時のタグはマイタグのものだけ', () => {
+      const c = counted();
+      c.s.updateSettings({ cloth: 'blue' });
+      expect(c.s.data.settings.cloth).toBe('blue');
+      c.s.addTag('朝');
+      const r = c.s.addRecipe({ url, name: 'テスト', cat: '主菜', tags: ['朝', '未登録'] });
+      expect(r.ok && r.recipe.tags).toEqual(['朝']);
+    });
+  });
 });

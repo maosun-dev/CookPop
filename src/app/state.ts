@@ -1,6 +1,7 @@
 // データの持ち主。変えたら保存して、購読している画面に知らせる。
 import { toDateStr } from '../core/date';
 import { addLog } from '../core/log';
+import { addTag as addTagData, deleteTag as deleteTagData, renameTag as renameTagData, setRecipeTags as setRecipeTagsData } from '../core/tags';
 import { findByVideoId, newRecipe, parseVideoId, sanitizeRecipe, type Recipe, type RecipeInput } from '../core/recipe';
 import {
   exportBackup as exportBackupData,
@@ -31,6 +32,14 @@ export interface AppState {
   /** 今日作ったと記録する */
   markCooked(id: string): void;
   updateSettings(patch: Partial<Settings>): void;
+  /** マイタグを足す。失敗のときは何も変えない */
+  addTag(name: string): 'ok' | 'empty' | 'long' | 'dup' | 'full';
+  /** マイタグの名前を変える（料理のタグも置き換わる）。失敗のときは何も変えない */
+  renameTag(from: string, to: string): 'ok' | 'empty' | 'long' | 'dup' | 'missing';
+  /** マイタグを消す（料理からも外れる。料理は残る） */
+  deleteTag(name: string): void;
+  /** 料理のタグを置き換える（マイタグにあるものだけ残る） */
+  setRecipeTags(id: string, tags: string[]): void;
   exportBackup(): string;
   /** 読めなければ false で、何も変えない */
   importBackup(raw: string, mode: 'replace' | 'merge'): boolean;
@@ -64,7 +73,8 @@ export function createState(store: KeyValueStore, now: () => Date, newId: () => 
       const videoId = parseVideoId(input.url);
       if (!videoId) return { ok: false, reason: 'invalid' };
       if (findByVideoId(data.recipes, videoId)) return { ok: false, reason: 'duplicate' };
-      const recipe = newRecipe(input, newId(), today());
+      const tags = input.tags?.filter(t => data.settings.myTags.includes(t));
+      const recipe = newRecipe({ ...input, tags }, newId(), today());
       if (!recipe) return { ok: false, reason: 'invalid' };
       commit({ ...data, recipes: [...data.recipes, recipe] });
       return { ok: true, recipe };
@@ -91,6 +101,27 @@ export function createState(store: KeyValueStore, now: () => Date, newId: () => 
     },
     updateSettings(patch) {
       commit({ ...data, settings: { ...data.settings, ...patch } });
+    },
+    addTag(name) {
+      const r = addTagData(data, name);
+      if (r.error) return r.error;
+      commit(r.data);
+      return 'ok';
+    },
+    renameTag(from, to) {
+      const r = renameTagData(data, from, to);
+      if (r.error) return r.error;
+      // 同じ名前への変更は何も変わらないので、保存も知らせもしない
+      if (r.data !== data) commit(r.data);
+      return 'ok';
+    },
+    deleteTag(name) {
+      if (!data.settings.myTags.includes(name)) return;
+      commit(deleteTagData(data, name));
+    },
+    setRecipeTags(id, tags) {
+      if (!data.recipes.some(r => r.id === id)) return;
+      commit(setRecipeTagsData(data, id, tags));
     },
     exportBackup() {
       return exportBackupData(data);
