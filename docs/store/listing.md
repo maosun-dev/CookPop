@@ -44,7 +44,7 @@ YouTube アプリで料理動画を開き、「共有」から「クックポッ
 登録した料理や記録は、あなたの iPhone の中にだけ保存します。アカウント登録はいりません。機種変更のときは、バックアップのファイルで移せます。
 
 ※ 動画は YouTube の公式の埋め込みプレーヤーで再生します。投稿者が埋め込みを止めている動画は、「YouTube で開く」から YouTube アプリなどで見られます。
-※ 画面の下に広告が表示されます。
+※ 画面の上に広告が表示されます。
 
 ## キーワード（100字まで、カンマ区切り、名前と重ねない）
 
@@ -89,4 +89,4 @@ The app comes with 8 sample recipes, so you can try "きめて！" right away.
 
 Videos are played with the official YouTube embedded player (YouTube IFrame API). Because YouTube refuses embeds from the app's local origin, the player is loaded from our own page, https://maosun-dev.com/cookpop/player.html, inside an iframe. If a video cannot be embedded, the app shows a button to open it in the YouTube app.
 
-The app shows a banner ad (Google AdMob) above the tab bar. The ad is hidden while a video player is shown, while a sheet (such as Settings) is open, and while the keyboard is up.
+The app shows a banner ad (Google AdMob) at the top of the screen, just below the status bar. The ad is hidden while a video player is shown, while a sheet (such as Settings) is open, and while the keyboard is up.

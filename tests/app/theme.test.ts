@@ -95,11 +95,13 @@ describe('テーマ', () => {
     expect(css()).toMatch(/\.app\s*\{[^}]*position: fixed/);
   });
 
-  it('画面の下の余白とトーストは、バナーの高さ --ad-h ぶん上がる', () => {
+  it('画面はバナーの高さ --ad-h ぶん下から始まり、下の余白とトーストには入らない', () => {
     expect(css()).toMatch(/--ad-h:\s*0px;/);
+    const active = css().match(/\n\.screen\[data-active="true"\]\s*\{[^}]*\}/)![0];
+    expect(active).toMatch(/top:\s*var\(--ad-h\)/);
     const screen = css().match(/\n\.screen \{[^}]*\}/)![0];
-    expect(screen).toContain('var(--ad-h)');
+    expect(screen).not.toContain('var(--ad-h)');
     const toast = css().match(/\n\.toast \{[^}]*\}/)![0];
-    expect(toast).toContain('var(--ad-h)');
+    expect(toast).not.toContain('var(--ad-h)');
   });
 });

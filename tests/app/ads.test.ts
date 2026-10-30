@@ -73,7 +73,7 @@ describe('バナー広告の係', () => {
     await ads.init();
     await flush();
     expect(f.calls.indexOf('show')).toBeGreaterThan(f.calls.indexOf('initialize'));
-    expect(f.opts[0]).toMatchObject({ adId: REAL_BANNER, adSize: 'ADAPTIVE_BANNER', position: 'BOTTOM_CENTER', margin: 64, isTesting: false });
+    expect(f.opts[0]).toMatchObject({ adId: REAL_BANNER, adSize: 'ADAPTIVE_BANNER', position: 'TOP_CENTER', margin: 0, isTesting: false });
   });
 
   it('2回目に出すときは resumeBanner、隠すときは hideBanner と高さ0', async () => {

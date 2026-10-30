@@ -1,7 +1,7 @@
 // バナー広告（AdMob）の係。動くのはアプリ版だけで、Web 版では何もしない。
 // 出すか隠すかは bannerRule.ts が画面の様子（動画・シート・入力中）から決め、setBannerWanted で届く。
-// バナーはタブのすぐ上に出す。iOS の部品は margin を「下の安全域の上の端からの距離」として扱うので、タブの高さ（BANNER_MARGIN）を渡す。
-// 出したバナーの高さは CSS の --ad-h に入れ、画面の下の余白とトーストの位置を上げる。
+// バナーは画面のいちばん上（時計やノッチを避けた安全域のすぐ下）に出す。タブやボタンから離して、押し間違いを防ぐ。
+// 出したバナーの高さは CSS の --ad-h に入れ、画面をその高さぶん下から始める（中身がバナーの裏にもぐらない）。
 // 起動の順番は Apple と Google の決まりに合わせる：追跡の確認 → 広告の同意 → 広告の仕組みを動かす。
 // SuperShogi（src/app/ads.ts）と同じ流れ。開発中だけ ?adpreview で仮のバナー（高さ 50px）を出せる。
 import { AdMob, BannerAdPluginEvents, BannerAdPosition, BannerAdSize } from '@capacitor-community/admob';
@@ -12,8 +12,8 @@ const TEST_BANNER_ID = 'ca-app-pub-3940256099942544/2435281174';
 const REAL_BANNER_ID: string = 'ca-app-pub-7017663942238206/4663691703';
 const testing = REAL_BANNER_ID === '';
 
-/** バナーを下の安全域からどれだけ上げるか。style.css の --tabbar-h と同じ値（タブのすぐ上に乗る） */
-export const BANNER_MARGIN = 64;
+/** バナーを上の安全域からどれだけ離すか（ぴったり付ける） */
+export const BANNER_MARGIN = 0;
 
 /** 使うものだけを並べたプラグインの形（テストでは偽物を渡す） */
 export interface AdsPlugin {
@@ -22,7 +22,7 @@ export interface AdsPlugin {
   requestConsentInfo(): Promise<{ status: string; isConsentFormAvailable?: boolean }>;
   showConsentForm(): Promise<unknown>;
   initialize(o: { initializeForTesting: boolean }): Promise<void>;
-  showBanner(o: { adId: string; adSize: 'ADAPTIVE_BANNER'; position: 'BOTTOM_CENTER'; margin: number; isTesting: boolean }): Promise<void>;
+  showBanner(o: { adId: string; adSize: 'ADAPTIVE_BANNER'; position: 'TOP_CENTER'; margin: number; isTesting: boolean }): Promise<void>;
   hideBanner(): Promise<void>;
   resumeBanner(): Promise<void>;
   addListener(ev: 'bannerAdSizeChanged', fn: (s: { width: number; height: number }) => void): unknown;
@@ -70,7 +70,7 @@ export function createAds(deps: {
           try {
             await plugin.showBanner({
               adId: testing ? TEST_BANNER_ID : REAL_BANNER_ID,
-              adSize: 'ADAPTIVE_BANNER', position: 'BOTTOM_CENTER', margin: BANNER_MARGIN, isTesting: testing,
+              adSize: 'ADAPTIVE_BANNER', position: 'TOP_CENTER', margin: BANNER_MARGIN, isTesting: testing,
             });
             created = true;
             shown = true;
@@ -169,7 +169,7 @@ function realPlugin(): AdsPlugin {
     showConsentForm: () => AdMob.showConsentForm(),
     initialize: (o) => AdMob.initialize(o),
     showBanner: (o) => AdMob.showBanner({
-      adId: o.adId, adSize: BannerAdSize.ADAPTIVE_BANNER, position: BannerAdPosition.BOTTOM_CENTER,
+      adId: o.adId, adSize: BannerAdSize.ADAPTIVE_BANNER, position: BannerAdPosition.TOP_CENTER,
       margin: o.margin, isTesting: o.isTesting,
     }),
     hideBanner: () => AdMob.hideBanner(),
@@ -179,12 +179,12 @@ function realPlugin(): AdsPlugin {
   };
 }
 
-// 開発中の仮のバナー：タブのすぐ上に高さ 50px の帯を出すだけ
+// 開発中の仮のバナー：画面のいちばん上に高さ 50px の帯を出すだけ
 function previewAds(): Ads {
   const bar = document.createElement('div');
   bar.textContent = '広告（仮）';
-  bar.style.cssText = `position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + ${BANNER_MARGIN}px);height:50px;z-index:60;display:none;`
-    + 'align-items:center;justify-content:center;background:#ddd;color:#555;font:700 13px sans-serif;border-top:1px solid #aaa';
+  bar.style.cssText = `position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top) + ${BANNER_MARGIN}px);height:50px;z-index:60;display:none;`
+    + 'align-items:center;justify-content:center;background:#ddd;color:#555;font:700 13px sans-serif;border-bottom:1px solid #aaa';
   document.body.append(bar);
   return {
     async init() { /* 準備はいらない */ },
